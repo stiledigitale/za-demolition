@@ -33,6 +33,7 @@ Ogni modifica caricata su GitHub (branch `main`) viene pubblicata da sola da Clo
 - Per vedere o correggere i dati: pannello Supabase → Table Editor → `za_players` / `za_scores` (per togliere un giocatore basta cancellarlo da `za_players`: i suoi punteggi spariscono con lui).
 - Per spegnere la classifica (es. un portale che blocca i servizi esterni): `window.ZA_ONLINE = false;` prima del gioco.
 - Supabase gratuito mette in pausa il progetto dopo 7 giorni senza richieste: si riattiva dal pannello.
+- Verificata dal sito il 15/11/2026 sul database vero (giocatore, punteggio, posizione, blocco dei punteggi falsi).
 - Dal 15/11/2026 la classifica è ripartita da zero (la vecchia, su Cloudflare D1 dell'account personale, non è stata importata). Chi aveva giocato reinserisce solo il nome.
 
 ## Come funziona il gioco (stato attuale)
