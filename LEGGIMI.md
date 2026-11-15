@@ -1,4 +1,4 @@
-# ZA DEMOLITION — versione web (Ver. B.6.0)
+# ZA DEMOLITION — versione web (Ver. B.6.1)
 
 Gioco aziendale ZA srl in stile Timberman: si demolisce un palazzo piano per piano con l'escavatore.
 Nato in GDevelop, poi riscritto da zero come pagina web (un solo file `index.html`, canvas 2D, JavaScript senza librerie).
@@ -44,7 +44,7 @@ Ogni modifica caricata su GitHub (branch `main`) viene pubblicata da sola da Clo
 - **Modalità ROADMAP:** città in sequenza Riva del Garda → Trento → Bolzano → Verona (poi ricomincia con ★2…), **100 piani per città** (`LEVEL_EVERY` in `index.html`). Tra una città e l'altra: scena del trasferimento con camion Mercedes bianco e carrellone a 4 assi.
 - **Modalità PARTITA SINGOLA:** si sceglie una città già sbloccata nella Roadmap, palazzo infinito.
 - **Classifiche online:** una per la Roadmap e una per ogni città (`mode` = `road`, `s0`, `s1`, `s2`, `s3`), "di sempre" e "settimana"; a parità di piani vince il tempo più basso. Nome giocatore, codice di recupero progressi a 6 caratteri.
-- **Ambientazioni:** giorno / tramonto / notte / alba per città; facciate diroccate; cannoni nebulizzatori bianchi.
+- **Ambientazioni:** giorno / tramonto / notte / alba per città; cannoni nebulizzatori bianchi. Il palazzo da demolire è diroccato; i **fondali** (B.6.1) usano lo stesso stile (intonaco, cantonali, marcapiani, finestre con persiane) ma con palazzi curati e vivi: fioriere di gerani, tetti in coppi, tende dei negozi, glicine, vasi di limoni e oleandri, alberi in fiore, aiuole, siepi. Riva: lungolago; Trento: Castello, case affrescate e giardino; Bolzano: Duomo, case tirolesi con bovindo e banco della frutta; Verona: Arena e Liston con i bar. Tutto disegnato nel codice (`sceneKit` → `palazzo`, `window`, `flowerBox`, `pot`, `bloomTree`...), senza immagini.
 - **Ostacoli e bonus:** balconi di varie misure, piani vuoti, travi in cemento (20 pinzate), bonus tempo / casco / stella x2.
 - **Escavatori** (stessa livrea ZA bianca): CAT 323, CAT 319M gommato, CAT 329, CAT 330, CAT 340, sbloccati con il record.
 - **Operatori:** con foto e nome, 10 in tutto (OPS = 0-7, 9, 10). Tolto solo Seba (indice 8); FRANZ e DJ ZANELLA restano.

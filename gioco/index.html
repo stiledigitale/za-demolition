@@ -23,7 +23,7 @@
    ZA DEMOLITION — versione web (porting dal progetto GDevelop r.00)
    Risoluzione logica 720x1280 (verticale), scalata alla finestra.
    ===================================================================== */
-const VERSION = "Ver. B.6.0 web";
+const VERSION = "Ver. B.6.1 web";
 const W = 720, H = 1280;
 const FONT = '"Arial Black","Segoe UI Black","Helvetica Neue",Impact,sans-serif';
 const YELLOW = "#FFE600";
@@ -931,33 +931,19 @@ function rivaScene(){
   for (let i=0;i<40;i++){ g.fillStyle = "rgba(255,255,255,.08)"; g.fillRect(Math.random()*300, 60+Math.random()*200, 30, 3); }
   // facciate sul porto (base y=470)
   const BASE = 470;
-  const facade = (x, w, h, col, shutter, opts={})=>{
-    const top = BASE - h;
-    g.fillStyle = col; g.fillRect(x, top, w, h);
-    g.fillStyle = "rgba(0,0,0,.18)"; g.fillRect(x, top, w, 6);           // gronda
-    g.fillStyle = "#8a5a3c"; g.fillRect(x-4, top-8, w+8, 8);              // tetto
-    const cols = Math.max(2, Math.floor(w/34)), rows = Math.max(2, Math.floor((h-60)/38));
-    for (let r=0;r<rows;r++) for (let k=0;k<cols;k++){
-      const wx = x + 10 + k*(w-20)/cols + ((w-20)/cols-14)/2, wy = top + 22 + r*38;
-      g.fillStyle = "#3b4a5a"; g.fillRect(wx, wy, 14, 22);
-      if (shutter){ g.fillStyle = shutter; g.fillRect(wx-7, wy, 6, 22); g.fillRect(wx+15, wy, 6, 22); }
-      if (opts.flowers && r===0){ g.fillStyle = "#e74c5c"; g.fillRect(wx-2, wy+22, 18, 4); }
-    }
-    if (opts.arcade){ // portici
-      g.fillStyle = "rgba(0,0,0,.45)";
-      for (let k=0;k<Math.floor(w/40);k++){ const ax = x+8+k*40; g.fillRect(ax, BASE-34, 28, 34); g.beginPath(); g.arc(ax+14, BASE-34, 14, Math.PI, 0); g.fill(); }
-    }
-    if (opts.sign){ g.fillStyle = "rgba(0,0,0,.35)"; g.font = "bold 11px sans-serif"; g.textAlign="center"; g.fillText(opts.sign, x+w/2, top+16); }
-  };
+  const k = sceneKit(g, 4242);
+  const facade = (x, w, h, col, shutter, opts={})=> k.palazzo(x, BASE, w, h, { wall: col, shutter, trim:"#fff7e6",
+    boxes: opts.flowers ? 0.95 : 0.6, ground: opts.arcade ? "arcade" : "shops", sign: opts.sign, awning: opts.awning,
+    wisteria: opts.wisteria, gh: 40, pots: false, chimney: opts.chimney });
   // lato sinistro (visibile 0..216)
-  facade(-10, 125, 210, "#f2c94c", null, {arcade:true, sign:"MUNICIPIO"});
-  facade(110, 150, 190, "#efe6d2", "#2f8f5b", {flowers:true});
+  facade(-10, 125, 210, "#f2c94c", "#2f8f5b", {arcade:true, sign:"MUNICIPIO"});
+  facade(110, 150, 190, "#efe6d2", "#2f8f5b", {flowers:true, awning:["#2e7d32","#ffffff"], wisteria:"right", chimney:true});
   facade(255, 120, 175, "#f4c49a", "#2f8f5b");
   // lato destro (visibile 486..720)
   facade(395, 120, 180, "#f6d38a", "#2f8f5b", {arcade:true});
-  facade(505, 60, 200, "#f1b67a", "#2f8f5b");
-  facade(612, 70, 190, "#d9534f", "#efe6d2", {arcade:true});
-  facade(678, 60, 175, "#e8a33d", "#2f8f5b");
+  facade(505, 60, 200, "#f1b67a", "#2f8f5b", {flowers:true, awning:["#1f4e79","#ffffff"]});
+  facade(612, 70, 190, "#d9534f", "#efe6d2", {arcade:true, flowers:true});
+  facade(678, 60, 175, "#e8a33d", "#2f8f5b", {awning:["#c62828","#ffffff"]});
   // Torre Apponale
   const tx = 562, tw = 52, ttop = 95;
   g.fillStyle = "#b9b2a5"; g.fillRect(tx, ttop, tw, BASE-ttop);
@@ -1019,9 +1005,16 @@ function rivaScene(){
   }
   return rivaCanvas = c;
 }
-/* ---------- SCENARI DELLE TAPPE (disegnati a colori) ---------- */
-function sceneKit(g){
+/* ---------- SCENARI DELLE TAPPE (disegnati a colori) ----------
+   Stesso linguaggio grafico del palazzo da demolire (intonaco, cantonali, marcapiani, finestre con cornice,
+   persiane a lamelle) ma con palazzi curati e "vivi": fioriere, tende, vasi, alberi in fiore, aiuole.
+   Il palazzo da demolire copre il centro (x 216..486): i dettagli vanno soprattutto ai lati. */
+function sceneKit(g, seed){
+  let s = seed || 7;
+  const rnd = ()=> (s = (s*9301+49297)%233280)/233280;
+  const GERANI = ["#e53950","#ff6f91","#d81b60","#ffffff","#ff8a65"];
   return {
+    rnd,
     poly(pts, col){ g.fillStyle = col; g.beginPath(); pts.forEach(([x,y],i)=> i? g.lineTo(x,y) : g.moveTo(x,y)); g.closePath(); g.fill(); },
     rect(x,y,w,h,col){ g.fillStyle = col; g.fillRect(x,y,w,h); },
     blob(x,y,r,col){ g.fillStyle = col; g.beginPath(); g.arc(x,y,r,0,Math.PI*2); g.fill(); },
@@ -1029,120 +1022,307 @@ function sceneKit(g){
     stones(x,y,w,h,alpha){ g.strokeStyle = `rgba(0,0,0,${alpha||0.1})`; g.lineWidth = 1;
       for (let yy=y+8; yy<y+h; yy+=8){ g.beginPath(); g.moveTo(x,yy); g.lineTo(x+w,yy); g.stroke();
         for (let xx=x+((yy/8)%2?5:13); xx<x+w; xx+=16){ g.beginPath(); g.moveTo(xx,yy-8); g.lineTo(xx,yy); g.stroke(); } } },
+    // grana dell'intonaco (come il palazzo da demolire, ma pulita) + luce dall'alto
+    plaster(x,y,w,h){
+      const vg = g.createLinearGradient(0, y, 0, y+h); vg.addColorStop(0,"rgba(255,255,255,.16)"); vg.addColorStop(1,"rgba(0,0,0,.08)");
+      g.fillStyle = vg; g.fillRect(x,y,w,h);
+      for (let i=0;i<w*h/80;i++){ g.fillStyle = rnd()<0.5 ? "rgba(255,255,255,.08)" : "rgba(70,50,30,.05)"; g.fillRect(x+rnd()*w, y+rnd()*h, 1.5+rnd()*2, 1.5+rnd()*2); }
+    },
     ghibMerlons(x, y, w, col){ // merli a coda di rondine
       g.fillStyle = col; for (let xx=x; xx<x+w-10; xx+=20){ g.beginPath(); g.moveTo(xx,y); g.lineTo(xx,y-16); g.lineTo(xx+6,y-10); g.lineTo(xx+12,y-16); g.lineTo(xx+12,y); g.closePath(); g.fill(); } },
-    tree(x,y,s,col){ const c2 = col||"#3f6b3a"; for (const [dx,dy,r] of [[0,-40,34],[-26,-20,26],[26,-22,28],[0,-70,26],[-14,-55,22],[16,-52,24]]) this.blob(x+dx*s,y+dy*s,r*s,c2);
-      this.blob(x-10*s,y-60*s,10*s,"rgba(255,255,255,.08)"); },
-    conifer(x,y,s){ this.poly([[x-30*s,y],[x,y-120*s],[x+30*s,y]], "#2f5a3a"); this.rect(x-4*s,y,8*s,10*s,"#5a3d2b"); },
+    tree(x,y,s,col){ const c2 = col||"#3f6b3a"; this.rect(x-3*s, y-24*s, 6*s, 26*s, "#6b4a32");
+      for (const [dx,dy,r] of [[0,-40,34],[-26,-20,26],[26,-22,28],[0,-70,26],[-14,-55,22],[16,-52,24]]) this.blob(x+dx*s,y+dy*s,r*s,c2);
+      for (const [dx,dy,r] of [[-12,-62,12],[-22,-30,9],[8,-48,10]]) this.blob(x+dx*s,y+dy*s,r*s,"rgba(255,255,255,.1)"); },
+    // albero in fiore (ciliegio, magnolia...)
+    bloomTree(x,y,s,leaf,bloom){
+      this.rect(x-3*s, y-30*s, 6*s, 32*s, "#6b4a32");
+      g.strokeStyle = "#6b4a32"; g.lineWidth = 3*s; g.beginPath(); g.moveTo(x, y-26*s); g.lineTo(x-16*s, y-46*s); g.moveTo(x, y-30*s); g.lineTo(x+14*s, y-50*s); g.stroke();
+      for (const [dx,dy,r] of [[0,-56,30],[-24,-44,22],[24,-46,24],[-10,-76,22],[14,-74,20]]) this.blob(x+dx*s,y+dy*s,r*s,leaf);
+      const B = Array.isArray(bloom) ? bloom : [bloom];
+      for (let i=0;i<90;i++){ const a = rnd()*Math.PI*2, d = rnd()*38*s; this.blob(x+Math.cos(a)*d*1.2, y-58*s+Math.sin(a)*d*0.8, (1.6+rnd()*1.8)*s, B[i%B.length]); }
+      for (let i=0;i<10;i++) this.blob(x-40*s+rnd()*80*s, y+rnd()*3, 1.4*s, B[0]);   // petali caduti
+    },
+    conifer(x,y,s){ this.poly([[x-30*s,y],[x,y-120*s],[x+30*s,y]], "#2f5a3a"); this.poly([[x,y-120*s],[x+30*s,y],[x+6*s,y]], "rgba(0,0,0,.12)"); this.rect(x-4*s,y,8*s,10*s,"#5a3d2b"); },
+    cypress(x,y,s){ g.fillStyle = "#2e4f32"; g.beginPath(); g.ellipse(x, y-50*s, 11*s, 52*s, 0, 0, Math.PI*2); g.fill();
+      g.fillStyle = "rgba(255,255,255,.08)"; g.beginPath(); g.ellipse(x-4*s, y-56*s, 4*s, 40*s, 0, 0, Math.PI*2); g.fill(); },
+    hedge(x,y,w,h,col){ const c = col || "#3f7d3a"; this.rect(x, y+h*0.35, w, h*0.65, c);
+      for (let xx=x+h*0.35; xx<x+w; xx+=h*0.55) this.blob(xx, y+h*0.4, h*0.42, c);
+      for (let xx=x+h*0.3; xx<x+w; xx+=h*0.9) this.blob(xx, y+h*0.25, h*0.16, "rgba(255,255,255,.12)"); },
+    flowerBed(x,y,w,h,pal){
+      this.rect(x, y+h-4, w, 4, "#e6dfcf"); this.rect(x, y+h, w, 2, "rgba(0,0,0,.15)");          // cordolo
+      for (let i=0;i<w*h/14;i++) this.blob(x+rnd()*w, y+rnd()*(h-4), 2.4+rnd()*1.5, rnd()<0.5 ? "#2f7d32" : "#4c9a3c");
+      const P = pal || GERANI; for (let i=0;i<w*h/12;i++) this.blob(x+3+rnd()*(w-6), y+rnd()*(h-6), 1.7+rnd()*1.2, P[i%P.length]); },
+    // vaso di terracotta con pianta
+    pot(x,y,s,type){
+      const top = y-14*s;
+      if (type === "lemon"){ this.rect(x-1.5*s, top-20*s, 3*s, 20*s, "#6b4a32"); this.blob(x, top-28*s, 14*s, "#2f6b2f"); this.blob(x-5*s, top-32*s, 6*s, "rgba(255,255,255,.1)");
+        for (let i=0;i<8;i++) this.blob(x-11*s+rnd()*22*s, top-38*s+rnd()*20*s, 2.3*s, "#ffd23f"); }
+      else if (type === "ball"){ this.blob(x, top-10*s, 12*s, "#3a7d34"); this.blob(x-4*s, top-14*s, 5*s, "rgba(255,255,255,.12)"); }
+      else if (type === "oleander"){ for (let i=0;i<14;i++) this.blob(x-12*s+rnd()*24*s, top-6*s-rnd()*26*s, 5*s, i%2?"#2f6b2f":"#3e8a3b");
+        for (let i=0;i<22;i++) this.blob(x-12*s+rnd()*24*s, top-8*s-rnd()*26*s, 2.2*s, i%3 ? "#f06292" : "#ffffff"); }
+      else { for (let i=0;i<10;i++) this.blob(x-9*s+rnd()*18*s, top-3*s-rnd()*10*s, 3.5*s, i%2?"#2f7d32":"#4caf50");
+        for (let i=0;i<12;i++) this.blob(x-9*s+rnd()*18*s, top-4*s-rnd()*11*s, 2*s, GERANI[i%GERANI.length]); }
+      this.poly([[x-10*s,top],[x+10*s,top],[x+7*s,y],[x-7*s,y]], "#c0673f");
+      this.rect(x-11*s, top-2*s, 22*s, 4*s, "#d07a4f"); this.poly([[x+3*s,top+2*s],[x+10*s,top+2*s],[x+7*s,y],[x+1*s,y]], "rgba(0,0,0,.12)");
+    },
+    // fioriera sotto la finestra, con gerani che ricadono
+    flowerBox(x,y,w,pal){ const P = pal || GERANI;
+      for (let i=0;i<w/4;i++) this.blob(x+2+rnd()*(w-4), y+5+rnd()*5, 1.7, "#3c8c3f");
+      for (let i=0;i<w/2;i++) this.blob(x+2+rnd()*(w-4), y-2-rnd()*5, 2.5, i%3?"#2f7d32":"#4caf50");
+      for (let i=0;i<w/1.8;i++) this.blob(x+2+rnd()*(w-4), y-3-rnd()*6, 1.6, P[i%P.length]);
+      this.rect(x, y, w, 4, "#b5653d"); this.rect(x, y+3, w, 1, "rgba(0,0,0,.2)"); },
+    // tenda da sole a righe, bordo smerlato
+    awning(x,y,w,h,cols){ const c = cols || ["#c62828","#ffffff"];
+      g.save(); g.beginPath(); g.moveTo(x+3,y); g.lineTo(x+w-3,y); g.lineTo(x+w+3,y+h); g.lineTo(x-3,y+h); g.closePath(); g.clip();
+      for (let xx=x-6, i=0; xx<x+w+6; xx+=6, i++){ g.fillStyle = c[i%c.length]; g.fillRect(xx, y, 6, h); }
+      g.fillStyle = "rgba(0,0,0,.12)"; g.fillRect(x-4, y, w+8, 3); g.restore();
+      for (let xx=x-3, i=0; xx<x+w+3; xx+=6, i++) this.blob(xx+3, y+h, 3, c[i%c.length]);
+      this.rect(x-3, y+h+3, w+6, 2, "rgba(0,0,0,.12)"); },
+    // glicine che sale lungo la facciata
+    wisteria(x, top, base, flip){
+      g.strokeStyle = "#6b4a32"; g.lineWidth = 2; g.beginPath(); g.moveTo(x, base);
+      for (let y=base; y>top; y-=12) g.lineTo(x + Math.sin(y*0.15)*5*(flip?-1:1), y); g.stroke();
+      for (let y=top; y<base-20; y+=7){ const xx = x + Math.sin(y*0.15)*5*(flip?-1:1);
+        this.blob(xx + (rnd()-0.5)*16, y, 4, rnd()<0.5 ? "#4e8a3a" : "#6aa84f");
+        if (rnd()<0.6){ for (let k=0;k<5;k++) this.blob(xx + (rnd()-0.5)*14, y + 3 + k*2.6, 2.4 - k*0.3, k%2 ? "#b39ddb" : "#9575cd"); } } },
+    lamp(x, y, h){ this.rect(x, y-h, 3, h, "#2c2f33"); this.rect(x-5, y-h-6, 13, 7, "#2c2f33"); this.blob(x+1.5, y-h-2, 3, "rgba(255,230,160,.85)");
+      // cestino di fiori appeso
+      this.rect(x+3, y-h+16, 10, 1.5, "#2c2f33"); this.flowerBox(x+5, y-h+26, 14, ["#ff4f81","#ffffff","#b388ff"]); },
+    // finestra in stile palazzo (cornice, vetro con riflesso, persiane aperte, davanzale)
+    window(wx, wy, ww, wh, o){
+      const trim = o.trim || "#fff7e6";
+      this.rect(wx-3, wy-5, ww+6, 4, trim); this.rect(wx-3, wy-1.5, ww+6, 1, "rgba(0,0,0,.12)");    // cappello
+      this.rect(wx-2, wy-1, ww+4, wh+2, trim);                                                       // cornice
+      const gg = g.createLinearGradient(0,wy,0,wy+wh); gg.addColorStop(0,"#a8cde0"); gg.addColorStop(1,"#4f6f84"); g.fillStyle = gg; g.fillRect(wx, wy, ww, wh);
+      if (rnd() < 0.35) this.rect(wx+1, wy+1, ww-2, wh*0.32, rnd()<0.5 ? "rgba(255,255,255,.75)" : "rgba(245,225,180,.85)");  // tendina
+      g.fillStyle = "rgba(255,255,255,.35)"; g.beginPath(); g.moveTo(wx+1, wy+wh*0.62); g.lineTo(wx+ww*0.55, wy+1); g.lineTo(wx+ww*0.8, wy+1); g.lineTo(wx+1, wy+wh*0.85); g.closePath(); g.fill();
+      this.rect(wx+ww/2-0.75, wy, 1.5, wh, trim); this.rect(wx, wy+wh*0.42, ww, 1.5, trim);
+      if (o.shutter){ for (const sx of [wx-ww/2-3, wx+ww+2]){ this.rect(sx, wy-1, ww/2+1, wh+2, o.shutter);
+        g.fillStyle = "rgba(0,0,0,.22)"; for (let y=wy+2; y<wy+wh; y+=3) g.fillRect(sx+1, y, ww/2-1, 1);
+        g.fillStyle = "rgba(255,255,255,.14)"; g.fillRect(sx, wy-1, 1.5, wh+2); } }
+      this.rect(wx-4, wy+wh+1, ww+8, 3, trim); this.rect(wx-4, wy+wh+4, ww+8, 1.5, "rgba(0,0,0,.15)");    // davanzale
+      if (rnd() < (o.boxes ?? 0.5)) this.flowerBox(wx-3, wy+wh+1, ww+6, o.flowers);
+    },
+    /* palazzo curato nello stile di quello da demolire
+       o: wall, trim, shutter, corner, roof (false = niente coppi), gh (piano terra), fh (altezza piano), cols, ww, wh,
+          ground: "shops" | "arcade" | "door", awning: [colori], boxes (0..1), flowers: [colori], sign, wisteria: "left"|"right",
+          balcony (true), erker (bovindo tirolese), fresco: [colori] (facciata affrescata), pots: true */
+    palazzo(x, base, w, h, o){
+      o = o || {}; const top = base - h, trim = o.trim || "#fff7e6";
+      const GH = o.gh || 46, FH = o.fh || 38, ww = o.ww || 14, wh = o.wh || 22;
+      this.rect(x, top, w, h, o.wall || "#f2cf72"); this.plaster(x, top, w, h);
+      if (o.fresco){ // fasce affrescate (case dipinte di Trento)
+        const F = o.fresco; for (let yy=top+6, i=0; yy<base-GH-10; yy+=FH, i++){
+          this.rect(x+4, yy+FH-12, w-8, 8, F[i%F.length]); g.fillStyle = "rgba(255,255,255,.35)";
+          for (let xx=x+8; xx<x+w-8; xx+=12){ g.beginPath(); g.arc(xx, yy+FH-8, 3, 0, Math.PI*2); g.fill(); } } }
+      this.rect(x+w-5, top, 5, h, "rgba(0,0,0,.07)");                                                  // volume
+      if (o.quoins !== false) for (let y=top+10, k=0; y<base-GH-4; y+=13, k++){ const qw = k%2 ? 6 : 10;   // cantonali
+        g.fillStyle = o.corner || "rgba(255,255,255,.3)"; g.fillRect(x, y, qw, 11); g.fillRect(x+w-qw, y, qw, 11);
+        g.fillStyle = "rgba(0,0,0,.08)"; g.fillRect(x, y+10, qw, 1); g.fillRect(x+w-qw, y+10, qw, 1); }
+      if (o.roof !== false){ // cornicione e coppi
+        const rt = top-4, rh = 11;
+        this.poly([[x-8,rt],[x+2,rt-rh],[x+w-2,rt-rh],[x+w+8,rt]], o.roofCol || "#b5583a");
+        g.strokeStyle = "rgba(0,0,0,.18)"; g.lineWidth = 1; for (let yy=rt-rh+3; yy<rt; yy+=4){ g.beginPath(); g.moveTo(x-6,yy); g.lineTo(x+w+6,yy); g.stroke(); }
+        g.fillStyle = "rgba(255,255,255,.13)"; for (let xx=x; xx<x+w; xx+=6) g.fillRect(xx, rt-rh+1, 2, rh-1);
+        this.rect(x-4, top-5, w+8, 6, trim); this.rect(x-4, top+1, w+8, 3, "rgba(0,0,0,.16)");
+        if (o.chimney) { this.rect(x+w*0.7, rt-rh-14, 9, 14, o.wall); this.rect(x+w*0.7-2, rt-rh-17, 13, 4, "#8a5a3c"); }
+      }
+      if (o.sign){ g.fillStyle = "rgba(0,0,0,.4)"; g.font = "bold 11px sans-serif"; g.textAlign = "center"; g.textBaseline = "alphabetic"; g.fillText(o.sign, x+w/2, top+16); }
+      const floors = Math.max(1, Math.floor((h - GH - (o.sign ? 24 : 12)) / FH));
+      const cols = o.cols || Math.max(1, Math.floor((w - 12) / 34)), cw = (w - 12) / cols;
+      for (let f=0; f<floors; f++){
+        const fy = top + (o.sign ? 26 : 14) + f*FH;
+        if (f > 0){ this.rect(x, fy-8, w, 3, trim); this.rect(x, fy-5, w, 1, "rgba(0,0,0,.12)"); }   // marcapiano
+        for (let c=0; c<cols; c++){ const wx = x + 6 + c*cw + (cw-ww)/2;
+          if (o.erker && f < floors && c === Math.floor(cols/2)) continue;
+          this.window(wx, fy, ww, wh, o); }
+      }
+      if (o.erker){ // bovindo tirolese al centro, su tutti i piani
+        const ex = x + 6 + Math.floor(cols/2)*cw + cw/2 - 16, et = top + 8, eb = top + (o.sign ? 26 : 14) + floors*FH - 4;
+        this.rect(ex, et, 32, eb-et, o.erkerCol || o.wall); this.plaster(ex, et, 32, eb-et); this.rect(ex+26, et, 6, eb-et, "rgba(0,0,0,.1)");
+        this.poly([[ex-2,et],[ex+16,et-14],[ex+34,et]], o.roofCol || "#5d6b74");
+        this.poly([[ex,eb],[ex+32,eb],[ex+20,eb+12],[ex+12,eb+12]], o.erkerCol || o.wall);
+        for (let f=0; f<floors; f++) this.window(ex+9, top + (o.sign ? 26 : 14) + f*FH, 14, wh, Object.assign({}, o, {shutter:null, boxes:1}));
+      }
+      if (o.balcony){ const by = top + (o.sign ? 26 : 14) + FH + wh + 4, bx = x + w*0.25, bw = w*0.5;  // balconcino in ferro
+        this.rect(bx, by, bw, 4, trim); this.rect(bx, by+4, bw, 2, "rgba(0,0,0,.18)");
+        this.rect(bx, by-14, bw, 2, "#2c2f33"); for (let xx=bx+2; xx<bx+bw; xx+=4) this.rect(xx, by-13, 1.2, 13, "#2c2f33");
+        this.pot(bx+8, by, 0.55, "flowers"); this.pot(bx+bw-8, by, 0.55, "oleander"); }
+      // piano terra
+      const gy = base - GH;
+      this.rect(x, gy-4, w, 4, trim); this.rect(x, gy, w, 2, "rgba(0,0,0,.12)");
+      this.rect(x, base-7, w, 7, "rgba(0,0,0,.1)");                                                    // zoccolo
+      const units = Math.max(1, Math.round(w / 46)), uw = w / units, door = Math.floor(units/2);
+      for (let u=0; u<units; u++){ const ux = x + u*uw;
+        if (o.ground === "arcade"){ this.arch(ux+5, gy+4, uw-10, GH-4, "rgba(45,35,30,.72)"); this.blob(ux+uw/2, gy+12, 2.5, "rgba(255,220,140,.9)");
+          this.rect(ux+uw/2-6, base-14, 12, 10, "rgba(255,255,255,.12)"); continue; }
+        if (u === door && (o.ground === "door" || units > 1)){ // portone in legno
+          this.rect(ux+uw/2-12, gy+6, 24, GH-6, trim); this.arch(ux+uw/2-10, gy+8, 20, GH-8, "#6b4226");
+          this.rect(ux+uw/2-0.5, gy+20, 1, GH-20, "rgba(0,0,0,.3)"); this.blob(ux+uw/2-4, gy+GH*0.6, 1.4, "#e0b84a"); this.blob(ux+uw/2+4, gy+GH*0.6, 1.4, "#e0b84a");
+          if (o.pots !== false){ this.pot(ux+uw/2-20, base, 0.8, u%2 ? "ball" : "lemon"); this.pot(ux+uw/2+20, base, 0.8, u%2 ? "ball" : "lemon"); }
+          continue; }
+        // vetrina con tenda da sole
+        this.rect(ux+5, gy+12, uw-10, GH-12, trim);
+        const sg = g.createLinearGradient(0, gy+14, 0, base); sg.addColorStop(0, "#6f8fa3"); sg.addColorStop(1, "#33434f"); g.fillStyle = sg; g.fillRect(ux+8, gy+15, uw-16, GH-17);
+        for (let k=0;k<5;k++) this.blob(ux+12+rnd()*(uw-24), base-6-rnd()*8, 2.5, ["#ffd23f","#e53950","#8bc34a","#ff9800","#ffffff"][k]);   // merce in vetrina
+        g.fillStyle = "rgba(255,255,255,.25)"; g.fillRect(ux+10, gy+16, 3, GH-20);
+        this.awning(ux+4, gy+3, uw-8, 12, o.awning);
+      }
+      if (o.wisteria) this.wisteria(o.wisteria === "left" ? x+5 : x+w-5, top+20, base-6, o.wisteria === "right");
+      this.rect(x+w-3, top+2, 2, h-4, "rgba(70,70,70,.35)");                                                // pluviale
+    },
     paving(y, col, line){ this.rect(0,y,W,560-y,col); g.strokeStyle = line; g.lineWidth = 1;
       for (let yy=y+10; yy<560; yy+=14){ g.beginPath(); g.moveTo(0,yy); g.lineTo(W,yy); g.stroke(); }
       for (let x=-200; x<W+200; x+=40){ g.beginPath(); g.moveTo(x, y); g.lineTo(x + (x-360)*0.5, 560); g.stroke(); } },
     mountains(pts, col){ this.poly([[0,560],...pts,[W,560]], col); },
+    // luce sulle creste delle montagne
+    ridgeLight(pts){ g.strokeStyle = "rgba(255,255,255,.18)"; g.lineWidth = 3; g.beginPath(); pts.forEach(([x,y],i)=> i? g.lineTo(x,y+2) : g.moveTo(x,y+2)); g.stroke(); },
   };
 }
 const sceneCache = {};
 function makeScene(name, paint){ if (sceneCache[name]) return sceneCache[name];
-  const c = document.createElement("canvas"); c.width = W*RS; c.height = 560*RS; const g = c.getContext("2d"); g.scale(RS, RS); paint(g, sceneKit(g)); return sceneCache[name] = c; }
+  const c = document.createElement("canvas"); c.width = W*RS; c.height = 560*RS; const g = c.getContext("2d"); g.scale(RS, RS);
+  let h = 0; for (const ch of name) h = (h*31 + ch.charCodeAt(0)) % 233280;
+  paint(g, sceneKit(g, h)); return sceneCache[name] = c; }
 
-/* --- TRENTO: Castello del Buonconsiglio --- */
+/* --- TRENTO: Castello del Buonconsiglio, case affrescate e giardini --- */
 function trentoScene(){ return makeScene("trento", (g,k)=>{
-  k.mountains([[0,220],[90,170],[200,230],[330,160],[470,120],[600,150],[720,110]], "#7f98a3");
-  k.mountains([[0,300],[120,250],[260,300],[400,240],[540,200],[640,215],[720,190]], "#4f6f52");
+  const M1 = [[0,220],[90,170],[200,230],[330,160],[470,120],[600,150],[720,110]], M2 = [[0,300],[120,250],[260,300],[400,240],[540,200],[640,215],[720,190]];
+  k.mountains(M1, "#7f98a3"); k.ridgeLight(M1);
+  k.mountains(M2, "#4f6f52"); k.ridgeLight(M2);
+  // case affrescate del centro (a sinistra, dietro le mura)
+  k.palazzo(-12, 400, 112, 175, { wall:"#f3dfb4", trim:"#fffaf0", shutter:"#7a4b2a", fresco:["#c9584a","#4f7fa6","#7aa05a"], boxes:0.8, ground:"door", gh:30, chimney:true });
+  k.palazzo(96, 400, 108, 150, { wall:"#e9b9a0", trim:"#fff5ef", shutter:"#3c5b3a", boxes:0.9, ground:"door", gh:30, wisteria:"right" });
   // corpo del castello (destra)
   const CS = "#e7dcc4";
-  k.rect(470, 210, 260, 200, CS); k.stones(470, 210, 260, 200, 0.07);
+  k.rect(470, 210, 260, 200, CS); k.plaster(470, 210, 260, 200); k.stones(470, 210, 260, 200, 0.06);
   k.ghibMerlons(470, 210, 260, CS);
-  for (let r=0;r<3;r++) for (let i=0;i<6;i++) k.rect(482+i*40, 240+r*46, 12, 20, "#5a5248");
+  for (let r=0;r<3;r++) for (let i=0;i<6;i++) k.window(482+i*40, 238+r*46, 12, 20, { trim:"#f6efe0", boxes: r===2 ? 0.7 : 0, flowers:["#e53950","#ffffff"] });
   // loggia veneziana
   k.rect(596, 250, 104, 44, "#d6c9ae"); for (let i=0;i<6;i++) k.arch(602+i*16, 256, 10, 32, "#3f3a33");
+  k.rect(596, 292, 104, 4, "#f6efe0");
   // torre d'Augusto (cilindrica)
   const tg = g.createLinearGradient(512,0,592,0); tg.addColorStop(0,"#f1e8d4"); tg.addColorStop(0.6,"#d9ccb1"); tg.addColorStop(1,"#b9ab90");
   g.fillStyle = tg; g.fillRect(515, 95, 74, 315); k.stones(515, 95, 74, 315, 0.08);
   k.rect(509, 72, 86, 26, "#e2d6bd"); for (let x=511; x<593; x+=13) k.rect(x, 60, 8, 14, "#e2d6bd");
   k.rect(509, 96, 86, 4, "rgba(0,0,0,.15)");
-  for (const [wx,wy] of [[545,150],[530,230],[560,300]]) k.rect(wx, wy, 8, 16, "#5a5248");
+  for (const [wx,wy] of [[545,150],[530,230],[560,300]]) { k.rect(wx-2, wy-2, 12, 20, "#f6efe0"); k.rect(wx, wy, 8, 16, "#5a5248"); }
   // bandiere
   for (const [fx,cols] of [[528,["#1f3f99"]],[560,["#2e9a47","#ffffff","#d32f2f"]]]){
     k.rect(fx, 22, 2, 40, "#555");
     cols.forEach((cc,i)=>k.rect(fx+2+i*(18/cols.length), 22, 18/cols.length, 12, cc)); }
-  // mura di cinta lunghe davanti
+  // mura di cinta lunghe davanti, con edera e rose rampicanti
   const WC = "#ddd2bb";
-  k.rect(-10, 380, 740, 120, WC); k.stones(-10, 380, 740, 120, 0.06);
+  k.rect(-10, 380, 740, 120, WC); k.plaster(-10, 380, 740, 120); k.stones(-10, 380, 740, 120, 0.06);
   k.rect(-10, 470, 740, 30, "#c7b99c");
   k.ghibMerlons(-10, 380, 740, WC);
+  for (const [ix, iw] of [[150, 60], [500, 80], [650, 70]]){
+    for (let i=0;i<iw*1.4;i++){ const x = ix + k.rnd()*iw, y = 392 + k.rnd()*82 * (1 - Math.abs(x-ix-iw/2)/iw); k.blob(x, y, 3.5, k.rnd()<0.5 ? "#3f7d3a" : "#5a9a45"); }
+    for (let i=0;i<iw/3;i++) k.blob(ix + k.rnd()*iw, 400 + k.rnd()*60, 2, i%2 ? "#ff5c8a" : "#ffffff"); }
   // bastione tondo a sinistra
-  k.rect(60, 330, 90, 170, "#e3d8c0"); k.stones(60, 330, 90, 170, 0.07); k.ghibMerlons(60, 330, 90, "#e3d8c0");
-  // alberi
-  k.tree(20, 420, 1.6, "#2f5530"); k.tree(185, 470, 1.1, "#3d6a37"); k.tree(700, 480, 0.9, "#3d6a37");
-  // prato e vialetto
-  k.rect(0, 500, W, 60, "#5f8f4a"); k.rect(0, 520, W, 40, "#c9bfa8");
+  k.rect(60, 330, 90, 170, "#e3d8c0"); k.plaster(60, 330, 90, 170); k.stones(60, 330, 90, 170, 0.07); k.ghibMerlons(60, 330, 90, "#e3d8c0");
+  k.rect(140, 330, 10, 170, "rgba(0,0,0,.08)");
+  // giardino: prato fiorito, aiuole, alberi in fiore, siepi, vasi
+  k.rect(0, 500, W, 22, "#6fa552"); for (let i=0;i<160;i++) k.blob(k.rnd()*W, 503 + k.rnd()*17, 1.4, ["#ffffff","#ffeb3b","#f8bbd0"][i%3]);
+  k.rect(0, 522, W, 38, "#d7ccb5"); g.strokeStyle = "rgba(0,0,0,.06)"; for (let x=-200; x<W+200; x+=36){ g.beginPath(); g.moveTo(x,522); g.lineTo(x+(x-360)*0.3,560); g.stroke(); }
+  k.flowerBed(0, 480, 200, 20, ["#e53935","#ffeb3b","#ffffff","#ff7043"]);   // tulipani
+  k.flowerBed(490, 480, 230, 20, ["#ec407a","#ffffff","#ab47bc","#ffca28"]);
+  k.bloomTree(18, 470, 1.25, "#4f8a3f", ["#ffc1d9","#ff9fc3","#ffffff"]);
+  k.bloomTree(192, 486, 0.85, "#4f8a3f", ["#ffffff","#fff3c4"]);
+  k.hedge(560, 470, 90, 22);
+  k.bloomTree(700, 492, 0.9, "#4f8a3f", ["#ffc1d9","#ff9fc3"]);
+  k.pot(520, 522, 1, "lemon"); k.pot(668, 522, 1, "ball"); k.pot(150, 522, 1, "lemon");
+  k.lamp(120, 522, 70); k.lamp(600, 522, 70);
 }); }
 
-/* --- BOLZANO: Duomo e piazza Walther --- */
+/* --- BOLZANO: Duomo, case tirolesi con i bovindi e il mercato di piazza Erbe --- */
 function bolzanoScene(){ return makeScene("bolzano", (g,k)=>{
-  k.mountains([[0,90],[60,140],[130,200],[200,260],[300,300],[420,250],[540,220],[640,180],[720,200]], "#8b9384");
-  k.mountains([[0,180],[80,230],[170,300],[260,360],[720,330]], "#5d7a50");
+  const M1 = [[0,90],[60,140],[130,200],[200,260],[300,300],[420,250],[540,220],[640,180],[720,200]], M2 = [[0,180],[80,230],[170,300],[260,360],[720,330]];
+  k.mountains(M1, "#8b9384"); k.ridgeLight(M1);
+  // vigneti sui pendii
+  g.save(); g.beginPath(); g.moveTo(0,560); M1.forEach(([x,y])=>g.lineTo(x,y)); g.lineTo(W,560); g.closePath(); g.clip();
+  g.strokeStyle = "rgba(70,110,50,.35)"; g.lineWidth = 2; for (let y=140; y<330; y+=9){ g.beginPath(); g.moveTo(0,y); g.lineTo(W,y-30); g.stroke(); } g.restore();
+  k.mountains(M2, "#5d7a50"); k.ridgeLight(M2);
   // Duomo: navata con il tetto a rombi colorati (sinistra)
   const SA = "#cdb38f";
-  k.rect(-10, 330, 230, 170, SA); k.stones(-10, 330, 230, 170, 0.06);
-  for (let i=0;i<4;i++) k.arch(10+i*48, 370, 22, 70, "#4b4a55");
+  k.rect(-10, 330, 230, 170, SA); k.plaster(-10, 330, 230, 170); k.stones(-10, 330, 230, 170, 0.06);
+  for (let i=0;i<4;i++){ k.arch(8+i*48, 368, 26, 74, "#efe2c8"); k.arch(10+i*48, 370, 22, 70, "#4b4a55"); g.fillStyle = "rgba(160,200,255,.18)"; g.fillRect(14+i*48, 384, 6, 50); }
   k.poly([[-20,332],[100,210],[230,332]], "#3c5b3a");
   g.save(); g.beginPath(); g.moveTo(-20,332); g.lineTo(100,210); g.lineTo(230,332); g.closePath(); g.clip();
   for (let y=210; y<340; y+=16) for (let x=-30; x<240; x+=20){ const cx = x + ((y/16)%2?10:0);
     g.fillStyle = ((x+y)/4)%3<1 ? "#e8c547" : ((x+y)/4)%3<2 ? "#2f6b4a" : "#1f2a2a";
     g.beginPath(); g.moveTo(cx,y); g.lineTo(cx+9,y+8); g.lineTo(cx,y+16); g.lineTo(cx-9,y+8); g.closePath(); g.fill(); }
+  g.fillStyle = "rgba(255,255,255,.12)"; g.beginPath(); g.moveTo(-20,332); g.lineTo(100,210); g.lineTo(60,332); g.closePath(); g.fill();
   g.restore();
   // campanile gotico con guglia traforata
-  k.rect(160, 120, 54, 380, SA); k.stones(160, 120, 54, 380, 0.07);
+  k.rect(160, 120, 54, 380, SA); k.plaster(160, 120, 54, 380); k.stones(160, 120, 54, 380, 0.07);
   for (const y of [170, 240]) { k.arch(170, y, 13, 40, "#4b4a55"); k.arch(191, y, 13, 40, "#4b4a55"); }
   k.rect(156, 160, 62, 6, "#b69c78"); k.rect(156, 230, 62, 6, "#b69c78");
   k.rect(156, 112, 62, 10, "#b69c78");
-  k.poly([[160,114],[187,-10],[214,114]], "#5b6068");
+  k.poly([[160,114],[187,-10],[214,114]], "#5b6068"); k.poly([[187,-10],[214,114],[195,114]], "rgba(0,0,0,.15)");
   g.fillStyle = "rgba(255,255,255,.25)"; for (let i=0;i<6;i++){ const y = 30 + i*14, w = 4 + i*2.2; g.fillRect(187-w/2, y, w, 5); }
   for (const px of [158, 216]) k.poly([[px-5,114],[px,80],[px+5,114]], "#5b6068");
   k.blob(187, 70, 9, "#e9e4d6"); g.strokeStyle="#333"; g.lineWidth=2; g.beginPath(); g.moveTo(187,70); g.lineTo(187,64); g.moveTo(187,70); g.lineTo(192,72); g.stroke();
-  // piazza a destra: palazzi con portici, abete
-  k.rect(560, 300, 170, 200, "#f1e2b8"); for (let r=0;r<3;r++) for (let i=0;i<4;i++) k.rect(575+i*38, 320+r*40, 14, 22, "#5d6b74");
-  for (let i=0;i<4;i++) k.arch(570+i*40, 450, 26, 50, "#6e5e4a");
-  k.rect(486, 340, 80, 160, "#e7d7c8"); for (let r=0;r<3;r++) for (let i=0;i<2;i++) k.rect(498+i*32, 356+r*40, 14, 22, "#5d6b74");
+  // piazza a destra: case tirolesi con bovindi, gerani e portici
+  k.palazzo(486, 500, 82, 170, { wall:"#e7d7c8", trim:"#fffaf2", shutter:"#3c5b3a", boxes:1, flowers:["#e53950","#d81b60","#ff6f91"], ground:"arcade", cols:2, roofCol:"#7a4a3a" });
+  k.palazzo(566, 500, 166, 210, { wall:"#f1e2b8", trim:"#fffaf2", shutter:"#3c5b3a", boxes:1, flowers:["#e53950","#ff6f91","#ffffff"], ground:"arcade", erker:true, erkerCol:"#f6ebcc", roofCol:"#7a4a3a", chimney:true });
   k.conifer(705, 330, 1.2);
   // monumento a Walther
   k.rect(560, 470, 90, 30, "#e6e3dc"); k.rect(572, 440, 66, 30, "#efece6"); k.rect(586, 330, 38, 110, "#f4f1ea");
+  k.rect(618, 330, 6, 110, "rgba(0,0,0,.08)");
   k.rect(580, 326, 50, 8, "#dcd8d0");
   k.blob(605, 268, 9, "#f4f1ea"); k.poly([[592,326],[596,280],[614,280],[620,326]], "#f4f1ea"); k.rect(615, 286, 4, 30, "#e4e0d8");
-  // aiuole fiorite + selciato
+  // selciato, aiuole e mercato della frutta
   k.paving(500, "#bcb4a6", "rgba(0,0,0,.08)");
-  const FC = ["#e53935","#fdd835","#ec407a","#8e24aa","#ffffff","#fb8c00"];
-  for (let i=0;i<220;i++){ const x = Math.random()*W, y = 480 + Math.random()*26; k.blob(x, y, 3+Math.random()*2, FC[i%FC.length]); }
-  k.rect(0, 504, W, 4, "#8d8577");
+  k.flowerBed(0, 480, 216, 22, ["#e53935","#fdd835","#ec407a","#8e24aa","#ffffff","#fb8c00"]);
+  k.flowerBed(486, 480, 74, 22, ["#e53935","#ffffff","#fdd835"]);
+  k.flowerBed(650, 480, 70, 22, ["#ec407a","#ffffff","#8e24aa"]);
+  // banco del mercato (piazza Erbe)
+  const sx = 24, sy = 520;
+  k.rect(sx, sy-30, 120, 30, "#8a5a3c"); k.rect(sx, sy-30, 120, 4, "#a8744f");
+  const fruit = ["#e53935","#ff9800","#fdd835","#8bc34a","#7b1fa2","#ff7043"];
+  for (let b=0;b<6;b++){ k.rect(sx+4+b*19, sy-40, 17, 10, "#c79a6b"); for (let i=0;i<7;i++) k.blob(sx+7+b*19+k.rnd()*11, sy-42-k.rnd()*4, 3, fruit[b]); }
+  k.rect(sx+4, sy-78, 3, 48, "#6b4a32"); k.rect(sx+113, sy-78, 3, 48, "#6b4a32");
+  k.awning(sx-4, sy-86, 128, 14, ["#2e7d32","#ffffff"]);
+  k.pot(170, 524, 1.1, "oleander"); k.pot(520, 524, 1, "flowers"); k.lamp(470, 524, 74);
 }); }
 
-/* --- VERONA: Arena --- */
+/* --- VERONA: Arena e il Liston di piazza Bra --- */
 function veronaScene(){ return makeScene("verona", (g,k)=>{
-  // edifici lontani
-  k.rect(600, 300, 130, 200, "#f2d58a"); for (let r=0;r<4;r++) for (let i=0;i<3;i++) k.rect(615+i*38, 320+r*40, 14, 22, "#6b5a45");
   // anfiteatro
   const ST = "#c9906e", ST2 = "#b67b5c";
   g.fillStyle = ST; g.beginPath(); g.moveTo(-20, 500); g.lineTo(-20, 300); g.quadraticCurveTo(360, 250, 740, 300); g.lineTo(740, 500); g.closePath(); g.fill();
-  // resti del terzo ordine (bordo irregolare)
+  g.save(); g.beginPath(); g.moveTo(-20, 500); g.lineTo(-20, 300); g.quadraticCurveTo(360, 250, 740, 300); g.lineTo(740, 500); g.closePath(); g.clip();
+  k.plaster(-20, 250, 760, 250); g.restore();
   for (let x=-10; x<730; x+=18){ const yTop = 300 - 50*Math.sin(Math.PI*(x+20)/760) + (Math.sin(x*0.7)*6); k.rect(x, yTop-8-Math.abs(Math.sin(x))*10, 14, 14, ST2); }
   k.stones(-20, 270, 760, 230, 0.07);
   const curveY = x => 300 - 50*Math.sin(Math.PI*(x+20)/760);
   for (let x=-10; x<730; x+=52){
     const top = curveY(x+20);
-    k.arch(x+6, top+22, 38, 70, "#5b3b2c");       // primo piano di archi
-    k.arch(x+6, top+110, 38, 84, "#4a2f23");      // piano terra
-    k.rect(x+10, top+150, 30, 44, "#a32626");     // portoni rossi
+    k.arch(x+6, top+22, 38, 70, "#5b3b2c");
+    k.arch(x+6, top+110, 38, 84, "#4a2f23");
+    k.rect(x+10, top+150, 30, 44, "#a32626");
     k.rect(x+10, top+150, 30, 6, "#7f1c1c");
     k.rect(x, top+100, 52, 6, ST2);
   }
   // l'Ala (frammento a 4 ordini) a sinistra
-  k.rect(18, 120, 72, 380, ST); k.stones(18, 120, 72, 380, 0.08);
+  k.rect(18, 120, 72, 380, ST); k.plaster(18, 120, 72, 380); k.stones(18, 120, 72, 380, 0.08);
   for (let r=0;r<3;r++) k.arch(32, 140 + r*80, 44, 62, "#5b3b2c");
-  k.rect(14, 118, 80, 8, ST2);
-  // piazza Bra
+  k.rect(14, 118, 80, 8, ST2); k.rect(84, 120, 6, 380, "rgba(0,0,0,.1)");
+  // il Liston a destra: palazzi colorati con i bar
+  k.palazzo(500, 500, 108, 230, { wall:"#f2d58a", trim:"#fff7e6", shutter:"#5e3a2a", boxes:0.8, awning:["#7b1f2b","#f5e6d8"], ground:"shops", roofCol:"#a5553a", wisteria:"left" });
+  k.palazzo(606, 500, 126, 260, { wall:"#e7a98c", trim:"#fff4ea", shutter:"#2f5a3a", boxes:0.7, awning:["#1f4e79","#ffffff"], ground:"shops", balcony:true, roofCol:"#a5553a", chimney:true });
+  // piazza Bra: selciato, giardino con cedri e cipressi, aiuole
   k.paving(500, "#bfb3a6", "rgba(0,0,0,.07)");
-  for (const lx of [150, 560]){ k.rect(lx, 430, 4, 70, "#2c2f33"); k.rect(lx-6, 424, 16, 8, "#2c2f33"); }
+  k.hedge(-10, 470, 150, 26, "#3f7d3a");
+  k.flowerBed(0, 488, 210, 18, ["#e53935","#ffffff","#ffca28","#ec407a"]);
+  k.cypress(150, 500, 1.1); k.cypress(196, 504, 0.9);
+  k.tree(110, 500, 0.9, "#3d6a37");
+  // tavolini dei bar con ombrelloni
+  for (const ux of [540, 640, 700]){ k.rect(ux-1, 474, 2, 38, "#666"); k.awning(ux-24, 462, 48, 10, ["#f5e6d8","#7b1f2b"]);
+    k.rect(ux-12, 504, 24, 3, "#eee"); k.rect(ux-1, 506, 2, 12, "#888"); for (const cx of [ux-16, ux+16]){ k.rect(cx-4, 506, 8, 2, "#8a5a3c"); k.rect(cx-4, 498, 2, 10, "#8a5a3c"); } }
+  k.pot(520, 526, 1, "oleander"); k.pot(610, 526, 1, "lemon"); k.pot(712, 526, 1, "oleander");
+  for (const lx of [210]){ k.lamp(lx, 520, 80); }
 }); }
 
 /* sfondo della città: tappe disegnate a colori */
