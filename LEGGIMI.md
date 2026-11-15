@@ -23,6 +23,7 @@ Stesso schema di Tactical Racing Simulator. Regole comuni per i giochi web: docu
 Il progetto GDevelop di partenza (`gdevelop-originale/`, 34 MB) e il vecchio server Cloudflare restano solo nello zip di archivio, non nel repository.
 
 ### Aggiornare il gioco
+(Cloudflare Pages: cartella di uscita `gioco`, nessun comando di build. L'app Cloudflare su GitHub deve avere accesso al repository, altrimenti compare l'avviso "disconnected from your Git account" e le modifiche non vengono pubblicate.)
 Ogni modifica caricata su GitHub (branch `main`) viene pubblicata da sola da Cloudflare Pages in circa un minuto. Non si trascinano più file a mano.
 
 ### Classifica online (Supabase)
