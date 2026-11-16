@@ -23,7 +23,7 @@
    ZA DEMOLITION — versione web (porting dal progetto GDevelop r.00)
    Risoluzione logica 720x1280 (verticale), scalata alla finestra.
    ===================================================================== */
-const VERSION = "Ver. B.8.1 web";
+const VERSION = "Ver. B.8.2 web";
 const W = 720, H = 1280;
 const FONT = '"Arial Black","Segoe UI Black","Helvetica Neue",Impact,sans-serif';
 const YELLOW = "#FFE600";
@@ -250,6 +250,11 @@ const I18N = {
   mdd_share:    ["condividi un risultato","share a result","teile ein Ergebnis","partage un résultat","comparte un resultado"],
   back_menu:    ["TORNA AL MENU","BACK TO MENU","ZURÜCK ZUM MENÜ","RETOUR AU MENU","VOLVER AL MENÚ"],
   restart:      ["RICOMINCIA","RESTART","NEU STARTEN","RECOMMENCER","REINICIAR"],
+  share_game:   ["CONDIVIDI IL GIOCO","SHARE THE GAME","SPIEL TEILEN","PARTAGER LE JEU","COMPARTIR EL JUEGO"],
+  share_game_sub:["invita amici e colleghi","invite friends and colleagues","lade Freunde und Kollegen ein","invite amis et collègues","invita a amigos y compañeros"],
+  share_game_text:["Prova ZA DEMOLITION: demolisci palazzi con l'escavatore in 20 città italiane, dalla Roadmap alla sfida del giorno! Si gioca gratis qui:","Try ZA DEMOLITION: demolish buildings with an excavator in 20 Italian cities, from the Roadmap to the daily challenge! Play free here:","Probier ZA DEMOLITION: reiß mit dem Bagger Gebäude in 20 italienischen Städten ab, von der Roadmap bis zur Tages-Challenge! Kostenlos spielen:","Essaie ZA DEMOLITION : démolis des immeubles à la pelleteuse dans 20 villes italiennes, de la Roadmap au défi du jour ! Joue gratuitement ici :","Prueba ZA DEMOLITION: derriba edificios con la excavadora en 20 ciudades italianas, ¡de la Roadmap al reto del día! Juega gratis aquí:"],
+  promo_line:   ["DEMOLISCI 20 CITTÀ ITALIANE","DEMOLISH 20 ITALIAN CITIES","REISS 20 ITALIENISCHE STÄDTE AB","DÉMOLIS 20 VILLES ITALIENNES","DERRIBA 20 CIUDADES ITALIANAS"],
+  promo_sub:    ["sfida del giorno · classifica online · medaglie","daily challenge · online leaderboard · medals","Tages-Challenge · Online-Rangliste · Medaillen","défi du jour · classement en ligne · médailles","reto del día · clasificación online · medallas"],
   transfer:     ["TRASFERIMENTO DEL CANTIERE","MOVING THE CONSTRUCTION SITE","DIE BAUSTELLE ZIEHT UM","TRANSFERT DU CHANTIER","TRASLADO DE LA OBRA"],
   skip:         ["tocca per saltare","tap to skip","tippen zum Überspringen","touche pour passer","toca para saltar"],
 };
@@ -1972,6 +1977,14 @@ const Menu = {
         fitText(txt("medals"), x+78, y+36, 24, w-92, "#fff", "left");
         fitText(Medals.count() + " / " + MEDALS.length, x+78, y+64, 17, w-92, YELLOW, "left");
       }, ()=>go(MedalsScreen), 8),
+      new Button(110, 1054, 500, 66, (x,y,w,h)=>{
+        ctx.fillStyle = YELLOW; rrect(x,y,w,h,18); ctx.fill(); ctx.lineWidth = 4; ctx.strokeStyle = "#111"; ctx.stroke();
+        // icona "condividi": tre nodi collegati
+        ctx.strokeStyle = "#111"; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(x+38, y+h/2); ctx.lineTo(x+62, y+20); ctx.moveTo(x+38, y+h/2); ctx.lineTo(x+62, y+h-20); ctx.stroke();
+        blob(x+38, y+h/2, 8, "#111"); blob(x+62, y+20, 8, "#111"); blob(x+62, y+h-20, 8, "#111");
+        fitText(txt("share_game"), x+86, y+25, 24, w-100, "#111", "left");
+        fitText(txt("share_game_sub"), x+86, y+49, 15, w-100, "#333", "left");
+      }, ()=>shareGame(), 8),
       muteBtn(),
     ];
     const size=60, gap=22, total=SOCIAL.length*size+(SOCIAL.length-1)*gap;
@@ -2714,18 +2727,50 @@ function shareCard(g, info){
   T(SHARE_URL.replace("https://", ""), CW/2, 1220, 40, "#111");
 }
 function rrectG(g, x, y, w, h, r){ g.beginPath(); g.moveTo(x+r, y); g.arcTo(x+w, y, x+w, y+h, r); g.arcTo(x+w, y+h, x, y+h, r); g.arcTo(x, y+h, x, y, r); g.arcTo(x, y, x+w, y, r); g.closePath(); }
+// immagine promozionale del gioco (menu → CONDIVIDI IL GIOCO)
+function promoCard(g){
+  const CW = 1080, CH = 1350, T = (s, x, y, size, col, align, stroke, sw)=>{ g.font = `900 ${size}px ${FONT}`; g.textAlign = align || "center"; g.textBaseline = "middle";
+    let w = g.measureText(s).width; if (w > CW - 80){ size = Math.floor(size*(CW-80)/w); g.font = `900 ${size}px ${FONT}`; }
+    if (stroke){ g.lineJoin = "round"; g.lineWidth = sw || size*0.16; g.strokeStyle = stroke; g.strokeText(s, x, y); } g.fillStyle = col; g.fillText(s, x, y); };
+  const sky = g.createLinearGradient(0, 0, 0, CH); sky.addColorStop(0, "#5fb8f0"); sky.addColorStop(1, "#cfeeff"); g.fillStyle = sky; g.fillRect(0, 0, CW, CH);
+  g.drawImage(SCENES[0](), -90, CH - 900, 1260, 980);
+  g.fillStyle = "rgba(0,0,0,.3)"; g.fillRect(0, 0, CW, CH);
+  const stripes = y => { g.fillStyle = YELLOW; g.fillRect(0, y, CW, 34); g.fillStyle = "#111"; for (let x=-40; x<CW+40; x+=68){ g.beginPath(); g.moveTo(x, y+34); g.lineTo(x+34, y); g.lineTo(x+68, y); g.lineTo(x+34, y+34); g.fill(); } };
+  stripes(0); stripes(CH-34);
+  if (ok(IMG.title)) g.drawImage(IMG.title, CW/2 - 290, 60, 580, 414);
+  T(txt("promo_line"), CW/2, 530, 58, YELLOW, "center", "#000", 12);
+  // tre città in cartolina
+  [[5, -0.06], [13, 0], [19, 0.06]].forEach(([ci, rot], i)=>{ const cx = 220 + i*320, cy = 760, w = 290, h = 300;
+    g.save(); g.translate(cx, cy); g.rotate(rot); g.fillStyle = "#fff"; g.fillRect(-w/2-10, -h/2-10, w+20, h+60);
+    const th = THEMES[ci % THEMES.length], sg = g.createLinearGradient(0, -h/2, 0, h/2); sg.addColorStop(0, th.sky[0]); sg.addColorStop(1, th.sky[1]);
+    g.fillStyle = sg; g.fillRect(-w/2, -h/2, w, h); g.save(); g.beginPath(); g.rect(-w/2, -h/2, w, h); g.clip();
+    const sw = h * W / 560; g.drawImage(SCENES[ci](), -sw/2, -h/2, sw, h); g.restore();
+    g.font = `900 30px ${FONT}`; g.textAlign = "center"; g.textBaseline = "middle"; g.fillStyle = "#111"; g.fillText(CITIES[ci], 0, h/2 + 26); g.restore(); });
+  T(txt("promo_sub"), CW/2, 1000, 36, "#fff", "center", "#000", 8);
+  g.fillStyle = YELLOW; rrectG(g, 190, 1090, 700, 170, 30); g.fill(); g.lineWidth = 6; g.strokeStyle = "#111"; g.stroke();
+  T(txt("share_play"), CW/2, 1145, 52, "#111");
+  T(SHARE_URL.replace("https://", ""), CW/2, 1212, 42, "#111");
+}
+async function shareGame(){
+  Medals.award("share");
+  const c = document.createElement("canvas"); c.width = 1080; c.height = 1350; promoCard(c.getContext("2d"));
+  await shareCanvas(c, txt("share_game_text") + " " + SHARE_URL, "za-demolition-gioco.png");
+}
 async function shareResult(info){
   Medals.award("share");
   const c = document.createElement("canvas"); c.width = 1080; c.height = 1350; shareCard(c.getContext("2d"), info);
-  const text = txt("share_text", info.score, info.city) + " " + SHARE_URL;
+  await shareCanvas(c, txt("share_text", info.score, info.city) + " " + SHARE_URL, "za-demolition.png");
+}
+// telefono: condivisione nativa (WhatsApp, social...) con l'immagine; computer: scarica l'immagine e copia il testo
+async function shareCanvas(c, text, fname){
   let blob = null; try{ blob = await new Promise(res => c.toBlob(res, "image/png")); }catch(e){}
   try{
-    if (blob && navigator.canShare){ const file = new File([blob], "za-demolition.png", { type: "image/png" });
+    if (blob && navigator.canShare){ const file = new File([blob], fname, { type: "image/png" });
       if (navigator.canShare({ files: [file] })){ await navigator.share({ files: [file], text }); return; } }
     if (navigator.share){ await navigator.share({ text, url: SHARE_URL }); return; }
   }catch(e){ if (e && e.name === "AbortError") return; }
   // computer: si scarica l'immagine e si copia il testo
-  try{ if (blob){ const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "za-demolition.png"; document.body.appendChild(a); a.click(); a.remove(); } }catch(e){}
+  try{ if (blob){ const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = fname; document.body.appendChild(a); a.click(); a.remove(); } }catch(e){}
   try{ await navigator.clipboard.writeText(text); }catch(e){}
   floatText(txt("share_saved"), 360, 820, 26, YELLOW, 1.4);
 }

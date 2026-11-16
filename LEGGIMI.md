@@ -1,4 +1,4 @@
-# ZA DEMOLITION — versione web (Ver. B.8.1)
+# ZA DEMOLITION — versione web (Ver. B.8.2)
 
 Gioco aziendale ZA srl in stile Timberman: si demolisce un palazzo piano per piano con l'escavatore.
 Nato in GDevelop, poi riscritto da zero come pagina web (un solo file `index.html`, canvas 2D, JavaScript senza librerie).
@@ -43,6 +43,7 @@ Ogni modifica caricata su GitHub (branch `main`) viene pubblicata da sola da Clo
 - **Sfida del giorno** (menu → 📅): ogni giorno una città (`dailyCity()`) e lo stesso palazzo per tutti (generatore con seme del giorno, `seededRand`). Classifica in Classifica → OGGI (modalità server `dAAAAMMGG`). Il record di oggi è in `zademo_dailyRec`.
 - **Medaglie** (15, menu → MEDAGLIE): 100 e 300 piani, combo x30, 3 travi, TNT, mattone d'oro, casco, caffè, Bora, acqua alta, nebbia, Vesuvio, arrivo a Roma, 50 piani nella sfida, condivisione. Avviso a schermo quando se ne conquista una; salvate anche online insieme ai progressi.
 - **Pausa** (B.8.1): pulsante giallo in alto a destra sempre visibile in partita (anche prima del VIA), oppure Esc/P. Dentro: RIPRENDI, RICOMINCIA, TORNA AL MENU, audio.
+- **Condividi il gioco** (B.8.2): pulsante giallo in fondo al menu. Crea un'immagine promozionale (logo, "Demolisci 20 città italiane", cartoline di Venezia, Firenze e Roma, indirizzo del gioco) con un testo d'invito nella lingua del giocatore (`promoCard`, `shareGame`).
 - **Condividi** nel game over: crea un'immagine 1080×1350 (logo, piani, città, modalità, operatore, nome, indirizzo del gioco). Sul telefono apre la condivisione (WhatsApp, social...), sul computer scarica l'immagine e copia il testo.
 - Server: `za_submit_score` accetta `dAAAAMMGG`; limite di plausibilità 120 + 16 piani al secondo (per TNT e mattone d'oro).
 
