@@ -23,7 +23,7 @@
    ZA DEMOLITION — versione web (porting dal progetto GDevelop r.00)
    Risoluzione logica 720x1280 (verticale), scalata alla finestra.
    ===================================================================== */
-const VERSION = "Ver. B.6.1 web";
+const VERSION = "Ver. B.7.0 web";
 const W = 720, H = 1280;
 const FONT = '"Arial Black","Segoe UI Black","Helvetica Neue",Impact,sans-serif';
 const YELLOW = "#FFE600";
@@ -59,9 +59,9 @@ const store = {
 let best = store.get("best", 0);
 // modalità: "road" = Roadmap (città in sequenza), "single" = partita singola in una città
 let gameMode = store.get("mode", "road"), singleCity = store.get("scity", 0);
-const rec = store.get("rec", null) || { road: best };   // record per modalità: road, s0..s3
+const rec = store.get("rec", null) || { road: best };   // record per modalità: road, s0..s19
 const recSingle = () => Math.max(0, ...CITIES_N.map(i => rec["s"+i] || 0));
-const CITIES_N = [0,1,2,3];
+const CITIES_N = Array.from({length: 20}, (_, i) => i);   // record della partita singola: s0..s19
 let operator = Math.min(Math.max(0, store.get("operator", 0)|0), OPERATORS-1);
 let muted = store.get("muted", false);
 
@@ -561,6 +561,22 @@ const FACADES = [
   { wall:"#efe3cc", shutter:"#7a4b2a", trim:"#ffffff", corner:"#d9c9a8" },   // Trento: crema e legno
   { wall:"#e9c9c0", shutter:"#3c5b3a", trim:"#fff5ef", corner:"#d6aea3" },   // Bolzano: rosa pastello
   { wall:"#dc9f80", shutter:"#5e3a2a", trim:"#f5e6d8", corner:"#c58467" },   // Verona: cotto
+  { wall:"#efe4cf", shutter:"#2b5a8a", trim:"#ffffff", corner:"#dccfb4" },   // Trieste
+  { wall:"#c8584a", shutter:"#2f5a3a", trim:"#f6efe2", corner:"#b04a3e" },   // Venezia
+  { wall:"#e9c49a", shutter:"#5e3a2a", trim:"#fff5ea", corner:"#d6ad80" },   // Padova
+  { wall:"#f1d9b0", shutter:"#3c5b3a", trim:"#fffaf0", corner:"#dcc394" },   // Bergamo
+  { wall:"#e8b49a", shutter:"#5e3a2a", trim:"#fff4ea", corner:"#d39c80" },   // Brescia
+  { wall:"#e9d7b0", shutter:"#3c5b3a", trim:"#fffaf0", corner:"#d6c093" },   // Torino
+  { wall:"#d9cfc2", shutter:"#4a4a4a", trim:"#f6f2ea", corner:"#c4b8a8" },   // Milano
+  { wall:"#c95a3c", shutter:"#3c5b3a", trim:"#f6dcc4", corner:"#b04c32" },   // Bologna
+  { wall:"#f4a7a0", shutter:"#2f7d32", trim:"#fff4f0", corner:"#e08e86" },   // Genova
+  { wall:"#e7cfa3", shutter:"#3c5b3a", trim:"#f8efe0", corner:"#cdb38a" },   // Firenze
+  { wall:"#e8a33d", shutter:"#2f7d32", trim:"#fff2dc", corner:"#d08d2a" },   // Napoli
+  { wall:"#efe5cf", shutter:"#2b5a8a", trim:"#ffffff", corner:"#ddd0b4" },   // Bari
+  { wall:"#f1d9b0", shutter:"#5e3a2a", trim:"#fffaf0", corner:"#dcc394" },   // Catanzaro
+  { wall:"#e3c48c", shutter:"#2f5a3a", trim:"#fbf0d8", corner:"#cdac72" },   // Palermo
+  { wall:"#f2c49a", shutter:"#2b5a8a", trim:"#fff6ea", corner:"#ddaa7e" },   // Cagliari
+  { wall:"#e39a5c", shutter:"#3c5b3a", trim:"#f8e8d4", corner:"#cc8248" },   // Roma
 ];
 const floorCache = {};
 // facciata vecchia e rovinata: intonaco scrostato, mattoni, crepe, colature, finestre rotte o sbarrate
@@ -911,8 +927,7 @@ function drawExcavator(m, frameName, side, slideFrom, slide, bottomY, t, shake, 
 }
 
 /* ---------- CITTÀ (ROADMAP) ---------- */
-const CITIES = ["RIVA DEL GARDA","TRENTO","BOLZANO","VERONA"];
-const COMING = ["TRIESTE","VENEZIA","PADOVA","BERGAMO","BRESCIA","TORINO","MILANO","BOLOGNA","GENOVA","FIRENZE","NAPOLI","BARI","CATANZARO","PALERMO","CAGLIARI","ROMA"];
+const CITIES = ["RIVA DEL GARDA","TRENTO","BOLZANO","VERONA","TRIESTE","VENEZIA","PADOVA","BERGAMO","BRESCIA","TORINO","MILANO","BOLOGNA","GENOVA","FIRENZE","NAPOLI","BARI","CATANZARO","PALERMO","CAGLIARI","ROMA"];
 const cityName = lv => CITIES[lv % CITIES.length] + (lv >= CITIES.length ? " ★" + (Math.floor(lv/CITIES.length)+1) : "");
 let maxLevel = store.get("maxLevel", 0);
 /* ---------- RIVA DEL GARDA: porto, lago e Torre Apponale (prima tappa) ---------- */
@@ -1325,8 +1340,457 @@ function veronaScene(){ return makeScene("verona", (g,k)=>{
   for (const lx of [210]){ k.lamp(lx, 520, 80); }
 }); }
 
-/* sfondo della città: tappe disegnate a colori */
-const SCENES = [()=>rivaScene(), trentoScene, bolzanoScene, veronaScene];
+/* ---------- KIT EXTRA per le città della Roadmap (mare, cupole, palme, pini, barche...) ---------- */
+function cityKit(g, seed){
+  const k = sceneKit(g, seed), R = k.rnd;
+  return Object.assign(k, {
+    sky(){ },  // il cielo lo disegna il gioco (cambia con l'ora del giorno)
+    hill(pts, col){ this.poly([[pts[0][0],560],...pts,[pts[pts.length-1][0],560]], col); },
+    sea(y, x0, x1, c1, c2){ x0 = x0 ?? 0; x1 = x1 ?? W;
+      const sg = g.createLinearGradient(0, y, 0, 560); sg.addColorStop(0, c1 || "#4aa3c8"); sg.addColorStop(1, c2 || "#1f5f88");
+      g.fillStyle = sg; g.fillRect(x0, y, x1-x0, 560-y);
+      g.fillStyle = "rgba(255,255,255,.45)"; for (let i=0;i<(x1-x0)*(560-y)/900;i++) g.fillRect(x0 + R()*(x1-x0), y+4+R()*(560-y-4), 6+R()*18, 1.6); },
+    gull(x,y,s){ g.strokeStyle = "rgba(255,255,255,.9)"; g.lineWidth = 2*(s||1); g.beginPath(); g.moveTo(x-8*s,y); g.quadraticCurveTo(x-4*s,y-5*s,x,y); g.quadraticCurveTo(x+4*s,y-5*s,x+8*s,y); g.stroke(); },
+    sailboat(x,y,s,col){ this.poly([[x-16*s,y],[x+16*s,y],[x+11*s,y+6*s],[x-11*s,y+6*s]], col || "#ffffff"); this.rect(x-0.8*s, y-34*s, 1.6*s, 34*s, "#555");
+      this.poly([[x+1*s,y-32*s],[x+1*s,y-3*s],[x+15*s,y-3*s]], "#ffffff"); this.poly([[x-1*s,y-28*s],[x-1*s,y-3*s],[x-11*s,y-3*s]], "#f1f1f1"); },
+    boat(x,y,s,col){ this.poly([[x-18*s,y],[x+18*s,y],[x+13*s,y+7*s],[x-13*s,y+7*s]], col || "#1f6fb2"); this.rect(x-18*s, y-1.5*s, 36*s, 2*s, "#ffffff"); this.rect(x-5*s, y-7*s, 10*s, 6*s, "#f4f1ea"); },
+    palm(x,y,s){ g.strokeStyle = "#8a6a45"; g.lineWidth = 6*s; g.beginPath(); g.moveTo(x, y); g.quadraticCurveTo(x+8*s, y-50*s, x+4*s, y-96*s); g.stroke();
+      const tx = x+4*s, ty = y-96*s;
+      for (let i=0;i<9;i++){ const a = -Math.PI/2 + (i-4)*0.42, L = 42*s;
+        g.strokeStyle = i%2 ? "#2f7d32" : "#3f9a40"; g.lineWidth = 7*s; g.beginPath(); g.moveTo(tx,ty);
+        g.quadraticCurveTo(tx+Math.cos(a)*L*0.6, ty+Math.sin(a)*L*0.6-10*s, tx+Math.cos(a)*L, ty+Math.sin(a)*L+12*s); g.stroke(); }
+      this.blob(tx, ty+4*s, 5*s, "#7a5a2a"); },
+    pine(x,y,s){ // pino a ombrello (Roma, Napoli)
+      g.strokeStyle = "#6b4a32"; g.lineWidth = 5*s; g.beginPath(); g.moveTo(x, y); g.quadraticCurveTo(x-6*s, y-50*s, x+4*s, y-92*s); g.stroke();
+      g.fillStyle = "#3d6b35"; g.beginPath(); g.ellipse(x+4*s, y-104*s, 46*s, 18*s, 0, 0, Math.PI*2); g.fill();
+      for (let i=0;i<7;i++) this.blob(x+4*s-38*s+i*12.5*s, y-108*s - Math.sin(i/6*Math.PI)*6*s, 11*s, i%2 ? "#46793c" : "#3d6b35");
+      g.fillStyle = "rgba(255,255,255,.08)"; g.beginPath(); g.ellipse(x-6*s, y-114*s, 22*s, 6*s, 0, 0, Math.PI*2); g.fill(); },
+    cactus(x,y,s){ // fico d'india
+      const pad = (px,py,r)=>{ g.fillStyle = "#5f9a4a"; g.beginPath(); g.ellipse(px,py,r*0.7,r,0,0,Math.PI*2); g.fill(); this.blob(px-r*0.2, py-r*0.3, r*0.25, "rgba(255,255,255,.1)"); };
+      pad(x, y-14*s, 14*s); pad(x-12*s, y-36*s, 11*s); pad(x+12*s, y-38*s, 11*s); pad(x, y-56*s, 10*s);
+      for (const [dx,dy] of [[-12,-48],[12,-50],[0,-67],[6,-30]]) this.blob(x+dx*s, y+dy*s, 3*s, "#e8513a"); },
+    dome(cx, by, r, col, ribs, lantern){ // cupola con costoloni e lanterna
+      g.fillStyle = col; g.beginPath(); g.ellipse(cx, by, r, r*1.05, 0, Math.PI, 0); g.closePath(); g.fill();
+      g.fillStyle = "rgba(0,0,0,.14)"; g.beginPath(); g.ellipse(cx, by, r, r*1.05, 0, -Math.PI/2, 0); g.lineTo(cx, by); g.closePath(); g.fill();
+      if (ribs){ g.strokeStyle = ribs; g.lineWidth = Math.max(1.5, r*0.06); for (const f of [-0.6,-0.2,0.2,0.6]){ g.beginPath(); g.moveTo(cx, by-r*1.05); g.quadraticCurveTo(cx+f*r*1.1, by-r*0.7, cx+f*r*1.02, by); g.stroke(); } }
+      if (lantern !== false){ this.rect(cx-r*0.12, by-r*1.05-r*0.3, r*0.24, r*0.3, "#f2ede2"); this.poly([[cx-r*0.14,by-r*1.35],[cx,by-r*1.55],[cx+r*0.14,by-r*1.35]], col);
+        this.rect(cx-1, by-r*1.7, 2, r*0.16, "#c9a227"); } },
+    columns(x, y, w, h, n, col){ for (let i=0;i<n;i++){ const cx = x + (i+0.5)*w/n; this.rect(cx-w/n*0.16, y, w/n*0.32, h, col); this.rect(cx-w/n*0.16, y, w/n*0.08, h, "rgba(255,255,255,.25)"); } },
+    pediment(x, y, w, h, col){ this.poly([[x,y],[x+w/2,y-h],[x+w,y]], col); this.poly([[x+w*0.14,y-h*0.15],[x+w/2,y-h*0.8],[x+w*0.86,y-h*0.15]], "rgba(0,0,0,.08)"); },
+    statue(x, y, s, col){ this.rect(x-8*s, y-14*s, 16*s, 14*s, "#e8e2d6"); this.blob(x, y-36*s, 4*s, col || "#e9e4da");
+      this.poly([[x-5*s,y-14*s],[x-4*s,y-32*s],[x+4*s,y-32*s],[x+5*s,y-14*s]], col || "#e9e4da"); },
+    crane(x, y, s, col){ const c = col || "#f2b705"; this.rect(x-3*s, y-110*s, 6*s, 110*s, c);
+      g.strokeStyle = "rgba(0,0,0,.35)"; g.lineWidth = 1; for (let yy=y-110*s; yy<y; yy+=8*s){ g.beginPath(); g.moveTo(x-3*s,yy); g.lineTo(x+3*s,yy+8*s); g.stroke(); }
+      this.rect(x-60*s, y-112*s, 90*s, 5*s, c); this.rect(x-8*s, y-118*s, 14*s, 8*s, "#c0392b"); this.rect(x-56*s, y-107*s, 1*s, 40*s, "#333"); this.rect(x-60*s, y-68*s, 9*s, 6*s, "#555"); },
+    laundry(x1, x2, y, cols){ g.strokeStyle = "rgba(60,60,60,.7)"; g.lineWidth = 1; g.beginPath(); g.moveTo(x1,y); g.quadraticCurveTo((x1+x2)/2, y+8, x2, y); g.stroke();
+      for (let x=x1+6, i=0; x<x2-6; x+=11, i++){ const yy = y + 8*Math.sin((x-x1)/(x2-x1)*Math.PI)*0.9; this.rect(x, yy, 8, 9 + (i%3)*2, (cols || ["#ffffff","#e53950","#4a90d9","#fdd835"])[i%4]); } },
+    gothicWindow(wx, wy, ww, wh, trim){ // finestra ad arco acuto (Venezia)
+      this.poly([[wx-2,wy+wh+1],[wx-2,wy+ww*0.5],[wx+ww/2,wy-ww*0.45],[wx+ww+2,wy+ww*0.5],[wx+ww+2,wy+wh+1]], trim);
+      const gg = g.createLinearGradient(0,wy,0,wy+wh); gg.addColorStop(0,"#a8cde0"); gg.addColorStop(1,"#4f6f84"); g.fillStyle = gg;
+      g.beginPath(); g.moveTo(wx, wy+wh); g.lineTo(wx, wy+ww*0.55); g.lineTo(wx+ww/2, wy-ww*0.2); g.lineTo(wx+ww, wy+ww*0.55); g.lineTo(wx+ww, wy+wh); g.closePath(); g.fill();
+      this.rect(wx+ww/2-0.75, wy, 1.5, wh, trim); this.rect(wx-4, wy+wh+1, ww+8, 3, trim); },
+    venetian(x, base, w, h, wall, trim, floors){ // palazzo gotico veneziano sull'acqua
+      this.rect(x, base-h, w, h, wall); this.plaster(x, base-h, w, h); this.rect(x+w-5, base-h, 5, h, "rgba(0,0,0,.07)");
+      this.rect(x-3, base-h-5, w+6, 6, trim); for (let xx=x; xx<x+w; xx+=10) this.poly([[xx,base-h-5],[xx+5,base-h-13],[xx+10,base-h-5]], trim);
+      const fh = (h-40)/floors;
+      for (let f=0; f<floors; f++){ const y = base-h+16+f*fh, n = Math.floor((w-10)/18);
+        for (let i=0;i<n;i++) this.gothicWindow(x+8+i*(w-12)/n, y, 11, fh*0.55, trim);
+        if (f === 1){ this.rect(x+6, y+fh*0.6, w-12, 3, trim); for (let xx=x+8; xx<x+w-8; xx+=4) this.rect(xx, y+fh*0.6-8, 1.5, 8, trim); } }
+      this.rect(x, base-24, w, 24, "rgba(0,0,0,.12)"); for (let i=0;i<Math.floor(w/26);i++) this.arch(x+6+i*26, base-22, 16, 22, "#3a3330");
+      if (R()<0.8) for (let i=0;i<3;i++) this.flowerBox(x+12+i*(w-30)/2, base-h+16+fh*0.55+1, 18); },
+    paletto(x, y, h, c1, c2){ for (let yy=y-h, i=0; yy<y; yy+=7, i++) this.rect(x, yy, 4, 7, i%2 ? c1 : c2); this.blob(x+2, y-h, 3, c2); },
+    flamingo(x, y, s){ g.strokeStyle = "#e88aa0"; g.lineWidth = 1.6*s; g.beginPath(); g.moveTo(x, y); g.lineTo(x, y-14*s); g.stroke();
+      g.fillStyle = "#f4a3b5"; g.beginPath(); g.ellipse(x+2*s, y-18*s, 7*s, 4.5*s, -0.2, 0, Math.PI*2); g.fill();
+      g.strokeStyle = "#f4a3b5"; g.lineWidth = 2*s; g.beginPath(); g.moveTo(x+7*s, y-20*s); g.quadraticCurveTo(x+12*s, y-30*s, x+8*s, y-34*s); g.stroke();
+      this.blob(x+8*s, y-35*s, 2*s, "#f4a3b5"); this.rect(x+9*s, y-35*s, 3*s, 1.5*s, "#222"); },
+    car(x, y, s, col){ // auto d'epoca da corsa (Mille Miglia)
+      this.poly([[x-24*s,y-6*s],[x-20*s,y-14*s],[x-4*s,y-16*s],[x+6*s,y-22*s],[x+16*s,y-22*s],[x+24*s,y-12*s],[x+26*s,y-6*s]], col || "#c62828");
+      this.rect(x-26*s, y-8*s, 52*s, 4*s, col || "#c62828"); this.blob(x-14*s, y-3*s, 6*s, "#222"); this.blob(x+15*s, y-3*s, 6*s, "#222");
+      this.blob(x-14*s, y-3*s, 2.5*s, "#ddd"); this.blob(x+15*s, y-3*s, 2.5*s, "#ddd"); this.blob(x+2*s, y-12*s, 5*s, "#ffffff"); this.rect(x-1*s, y-14*s, 6*s, 2*s, "#c62828"); },
+    cart(x, y, s){ // carretto siciliano
+      this.rect(x-30*s, y-30*s, 60*s, 18*s, "#f6c32b"); for (let i=0;i<5;i++) this.rect(x-28*s+i*12*s, y-28*s, 10*s, 14*s, ["#e53935","#1e88e5","#43a047","#e53935","#8e24aa"][i]);
+      this.rect(x-30*s, y-32*s, 60*s, 3*s, "#c62828"); this.rect(x+30*s, y-22*s, 26*s, 2.5*s, "#8a5a3c");
+      for (const wx of [x-14*s, x+14*s]){ this.blob(wx, y-8*s, 9*s, "#f6c32b"); this.blob(wx, y-8*s, 6.5*s, "#e53935"); g.strokeStyle = "#f6c32b"; g.lineWidth = 1.5*s;
+        for (let a=0;a<6;a++){ g.beginPath(); g.moveTo(wx, y-8*s); g.lineTo(wx+Math.cos(a)*9*s, y-8*s+Math.sin(a)*9*s); g.stroke(); } this.blob(wx, y-8*s, 2*s, "#1e88e5"); } },
+    vespa(x, y, s, col){ const c = col || "#7fc4c4"; this.blob(x-12*s, y-5*s, 5*s, "#222"); this.blob(x+12*s, y-5*s, 5*s, "#222");
+      g.fillStyle = c; g.beginPath(); g.ellipse(x-8*s, y-12*s, 11*s, 7*s, 0, 0, Math.PI*2); g.fill(); this.rect(x+6*s, y-26*s, 4*s, 20*s, c);
+      this.rect(x+3*s, y-28*s, 12*s, 3*s, "#333"); this.rect(x-14*s, y-20*s, 14*s, 3*s, "#5a3d2b"); this.blob(x+12*s, y-12*s, 6*s, c); },
+    tram(x, y, s, col){ const c = col || "#f28c28"; this.rect(x, y-34*s, 90*s, 30*s, c); this.rect(x, y-34*s, 90*s, 5*s, "#f6e7c8");
+      for (let i=0;i<6;i++) this.rect(x+6*s+i*14*s, y-27*s, 10*s, 11*s, "#5d7a8c"); this.rect(x, y-8*s, 90*s, 4*s, "#5a3d2b");
+      this.blob(x+18*s, y-3*s, 4*s, "#333"); this.blob(x+72*s, y-3*s, 4*s, "#333"); g.strokeStyle = "#333"; g.lineWidth = 1.5*s; g.beginPath(); g.moveTo(x+45*s, y-34*s); g.lineTo(x+55*s, y-52*s); g.stroke(); },
+  });
+}
+function makeCity(name, paint){ return ()=>{ if (sceneCache[name]) return sceneCache[name];
+  const c = document.createElement("canvas"); c.width = W*RS; c.height = 560*RS; const g = c.getContext("2d"); g.scale(RS, RS);
+  let h = 0; for (const ch of name) h = (h*31 + ch.charCodeAt(0)) % 233280;
+  paint(g, cityKit(g, h)); return sceneCache[name] = c; }; }
+const GROUND = (k, col, line)=> k.paving(500, col || "#c9bfae", line || "rgba(0,0,0,.07)");
+
+/* --- TRIESTE: piazza Unità d'Italia sul mare, Faro della Vittoria, Miramare, la Barcolana --- */
+const triesteScene = makeCity("trieste", (g,k)=>{
+  k.hill([[0,250],[120,210],[260,250],[400,300],[720,330]], "#7f9a86"); k.ridgeLight([[0,250],[120,210],[260,250],[400,300]]);
+  // Faro della Vittoria sul colle
+  k.rect(150, 120, 22, 110, "#ece6d8"); k.rect(166, 120, 6, 110, "rgba(0,0,0,.1)"); k.rect(146, 112, 30, 10, "#d9d1c0"); k.rect(152, 92, 18, 20, "#9fc9e0"); k.dome(161, 92, 11, "#6f8f86", null, false); k.statue(161, 82, 0.5, "#6f8f86");
+  // mare con la Barcolana e Miramare
+  k.sea(330, 300, W, "#4aa3c8", "#2a6f98");
+  k.hill([[560,360],[620,330],[720,320]], "#4f7f45");
+  k.rect(630, 296, 54, 40, "#fbfaf6"); k.rect(624, 290, 20, 46, "#fbfaf6"); k.ghibMerlons(624, 290, 60, "#fbfaf6"); for (let i=0;i<3;i++) k.window(640+i*14, 306, 6, 12, {trim:"#e9e4da", boxes:0});
+  for (let i=0;i<12;i++) k.sailboat(500 + (i%6)*38 + (i>5?18:0), 372 + Math.floor(i/6)*34, 0.55 + (i%3)*0.08, i%4 ? "#ffffff" : "#c62828");
+  k.gull(530, 250, 1); k.gull(560, 236, 0.8); k.gull(80, 160, 0.8);
+  // palazzo del Municipio con la torre dell'orologio
+  k.palazzo(-12, 500, 228, 230, { wall:"#efe4cf", trim:"#fffaf0", shutter:null, boxes:0.6, ground:"arcade", cols:6, roofCol:"#8c6a52" });
+  k.rect(84, 210, 40, 60, "#efe4cf"); k.plaster(84, 210, 40, 60); k.blob(104, 236, 13, "#f7f3ea"); g.strokeStyle = "#2b5a8a"; g.lineWidth = 2.5; g.beginPath(); g.arc(104, 236, 13, 0, Math.PI*2); g.stroke();
+  g.strokeStyle = "#222"; g.lineWidth = 2; g.beginPath(); g.moveTo(104,236); g.lineTo(104,227); g.moveTo(104,236); g.lineTo(110,238); g.stroke();
+  k.rect(80, 204, 48, 7, "#fffaf0"); k.rect(92, 180, 24, 24, "#efe4cf"); for (const mx of [94, 110]) { k.blob(mx+2, 178, 4, "#3a3a3a"); k.rect(mx-1, 182, 6, 12, "#3a3a3a"); }  // Mikeze e Jakeze
+  // molo Audace e piazza
+  GROUND(k, "#d9d2c3");
+  k.rect(486, 470, 234, 30, "#cfc6b2"); k.rect(486, 466, 234, 5, "#e8e2d4"); for (const bx of [520, 600, 680]) { k.rect(bx, 456, 8, 12, "#5a5a5a"); k.blob(bx+4, 456, 5, "#5a5a5a"); }
+  for (const lx of [500, 700]) { k.rect(lx, 410, 3, 60, "#2c2f33"); k.blob(lx+1.5, 408, 6, "#a8d4ff"); }
+  k.flowerBed(0, 482, 216, 18, ["#1e88e5","#ffffff","#e53935","#fdd835"]); k.pot(200, 526, 1, "oleander"); k.pot(520, 526, 1, "ball");
+});
+
+/* --- VENEZIA: palazzi gotici sul Canal Grande, campanile di San Marco, Palazzo Ducale, gondole --- */
+const veneziaScene = makeCity("venezia", (g,k)=>{
+  k.venetian(-10, 440, 112, 200, "#c8584a", "#f6efe2", 3); k.venetian(100, 440, 110, 180, "#e7b77a", "#fff7ea", 3);
+  // campanile di San Marco (abbassato: la punta resta dentro il fondale)
+  g.save(); g.translate(0, 84);
+  k.rect(560, 60, 50, 330, "#b5553f"); k.plaster(560, 60, 50, 330); for (let y=90; y<380; y+=14) k.rect(566, y, 2, 10, "rgba(0,0,0,.12)");
+  k.rect(554, 50, 62, 12, "#efe8da"); k.rect(558, 18, 54, 34, "#efe8da"); for (let i=0;i<4;i++) k.arch(561+i*13, 22, 9, 26, "#3a3330");
+  k.rect(560, 4, 50, 16, "#efe8da"); k.poly([[558,6],[585,-60],[612,6]], "#4f8f6a"); k.poly([[585,-60],[612,6],[592,6]], "rgba(0,0,0,.15)"); k.rect(584, -74, 2, 14, "#c9a227");
+  g.restore();
+  // Palazzo Ducale: loggia bianca e facciata rosa a rombi
+  const px = 486, pw = 240;
+  k.rect(px, 230, pw, 170, "#f2c9b8"); g.save(); g.beginPath(); g.rect(px, 230, pw, 110); g.clip();
+  for (let y=230; y<340; y+=12) for (let x=px-10; x<px+pw+10; x+=16){ const cx = x + ((y/12)%2 ? 8 : 0); g.fillStyle = (Math.floor(x/16)+Math.floor(y/12))%2 ? "rgba(255,255,255,.35)" : "rgba(200,120,110,.25)";
+    g.beginPath(); g.moveTo(cx, y); g.lineTo(cx+8, y+6); g.lineTo(cx, y+12); g.lineTo(cx-8, y+6); g.closePath(); g.fill(); } g.restore();
+  for (let i=0;i<5;i++) k.gothicWindow(px+18+i*44, 262, 18, 44, "#fbf6ee");
+  for (let x=px; x<px+pw; x+=10) k.poly([[x,230],[x+5,220],[x+10,230]], "#fbf6ee");
+  k.rect(px, 340, pw, 60, "#f7f1e6"); for (let i=0;i<10;i++) k.gothicWindow(px+6+i*24, 350, 14, 18, "#fbf6ee");
+  for (let i=0;i<8;i++) k.arch(px+8+i*30, 372, 20, 28, "#4b3f3a");
+  // Canal Grande con gondole e paline
+  k.sea(400, 0, W, "#3e8fa8", "#225f78");
+  for (const [x,c1] of [[30,"#1f4e9a"],[70,"#c62828"],[215,"#1f4e9a"],[500,"#c62828"],[690,"#1f4e9a"]]) k.paletto(x, 470, 70, c1, "#ffffff");
+  for (const [gx,gy,s] of [[150,450,1],[600,470,1.1],[520,430,0.7]]){
+    g.fillStyle = "#151515"; g.beginPath(); g.moveTo(gx-40*s, gy-6*s); g.quadraticCurveTo(gx, gy+6*s, gx+40*s, gy-8*s); g.quadraticCurveTo(gx+44*s, gy-14*s, gx+46*s, gy-18*s); g.lineTo(gx+38*s, gy-6*s); g.quadraticCurveTo(gx, gy+1*s, gx-36*s, gy-4*s); g.closePath(); g.fill();
+    k.rect(gx-4*s, gy-12*s, 14*s, 6*s, "#8a1f2a"); k.rect(gx-30*s, gy-30*s, 3*s, 14*s, "#ffffff"); for (let i=0;i<3;i++) k.rect(gx-31*s, gy-30*s+i*4*s, 5*s, 2*s, "#c62828");
+    k.blob(gx-29*s, gy-33*s, 3*s, "#f2c49a"); k.rect(gx-31.5*s, gy-37*s, 6*s, 2*s, "#e8d48a"); g.strokeStyle = "#5a3d2b"; g.lineWidth = 1.5*s; g.beginPath(); g.moveTo(gx-26*s, gy-24*s); g.lineTo(gx-10*s, gy+4*s); g.stroke(); }
+  // fondamenta
+  GROUND(k, "#d8cfc0"); k.rect(0, 498, W, 6, "#efe8da");
+  k.pot(40, 528, 1, "oleander"); k.pot(190, 528, 1, "flowers"); k.pot(520, 528, 1, "lemon"); k.pot(700, 528, 1, "oleander"); k.lamp(110, 528, 64); k.lamp(620, 528, 64);
+  k.gull(300, 170, 1); k.gull(470, 150, 0.8);
+});
+
+/* --- PADOVA: Basilica del Santo, Palazzo della Ragione, Prato della Valle con le statue --- */
+const padovaScene = makeCity("padova", (g,k)=>{
+  k.hill([[0,330],[150,300],[300,320],[460,290],[720,310]], "#8aa58a");
+  // Palazzo della Ragione (tetto a carena)
+  k.rect(-10, 280, 226, 120, "#e9d6b8"); k.plaster(-10, 280, 226, 120);
+  g.fillStyle = "#6d7a80"; g.beginPath(); g.moveTo(-14, 282); g.quadraticCurveTo(103, 170, 220, 282); g.closePath(); g.fill();
+  g.strokeStyle = "rgba(255,255,255,.18)"; g.lineWidth = 2; for (let i=1;i<6;i++){ g.beginPath(); g.moveTo(-14+i*39, 282); g.quadraticCurveTo(103, 200 + i*2, -14+i*39+20, 282); g.stroke(); }
+  for (let r=0;r<2;r++) for (let i=0;i<8;i++) k.arch(2+i*27, 296+r*52, 16, 40, r ? "#5a4a3c" : "#ffffff"), r || k.arch(5+i*27, 300, 10, 32, "#5a4a3c");
+  // Basilica del Santo con le cupole e i campanili-minareti
+  k.rect(500, 300, 220, 140, "#c48a5c"); k.plaster(500, 300, 220, 140); k.stones(500, 300, 220, 140, 0.06);
+  k.pediment(520, 300, 180, 40, "#c48a5c"); k.blob(610, 330, 14, "#f2e6d0"); k.blob(610, 330, 9, "#8fb3c8");
+  for (let i=0;i<4;i++) k.arch(530+i*42, 380, 20, 58, "#5a3d2b");
+  for (const [dx,r] of [[540,26],[610,34],[680,26],[575,20],[645,20]]) k.dome(dx, 300 - (r>30?16:6), r, "#9aa7ab", "rgba(255,255,255,.25)");
+  for (const tx of [508, 702]){ k.rect(tx-6, 170, 12, 140, "#c48a5c"); k.poly([[tx-8,172],[tx,138],[tx+8,172]], "#9aa7ab"); k.rect(tx-8, 230, 16, 4, "#f2e6d0"); }
+  // Prato della Valle: canale con le statue e alberi
+  GROUND(k, "#c7bda9");
+  k.rect(0, 472, 216, 30, "#6fa552"); k.sea(486, 0, 216, "#4f9ab0", "#3b7f96"); k.rect(0, 484, 216, 4, "#e9e2d2"); k.rect(0, 498, 216, 4, "#e9e2d2");
+  for (let i=0;i<6;i++) k.statue(14 + i*38, 486, 0.9);
+  k.rect(486, 472, 234, 28, "#6fa552"); k.sea(486, 486, W, "#4f9ab0", "#3b7f96"); for (let i=0;i<6;i++) k.statue(500 + i*40, 486, 0.9);
+  k.tree(90, 470, 0.8, "#3d6a37"); k.tree(640, 470, 0.8, "#3d6a37");
+  k.flowerBed(0, 502, 216, 14, ["#ffffff","#e53935","#fdd835"]); k.pot(520, 530, 1, "lemon"); k.pot(700, 530, 1, "oleander");
+});
+
+/* --- BERGAMO: Città Alta sul colle con le Mura venete, il Campanone e la funicolare --- */
+const bergamoScene = makeCity("bergamo", (g,k)=>{
+  k.hill([[0,120],[100,90],[200,110],[320,170],[720,260]], "#8fa88f");
+  k.hill([[0,330],[60,300],[200,280],[330,300],[460,280],[600,240],[720,230]], "#5f8f50");
+  // Mura venete
+  k.rect(-10, 330, 740, 50, "#e3dac6"); k.plaster(-10, 330, 740, 50); k.stones(-10, 330, 740, 50, 0.06); k.rect(-10, 326, 740, 6, "#efe8d8");
+  k.poly([[160,380],[200,330],[260,330],[300,380]], "#ddd3bd");
+  // Città Alta: Campanone, cupola della Cappella Colleoni, case
+  for (const [hx,hw,hh,c] of [[0,50,60,"#f1d9b0"],[46,44,74,"#e9c49a"],[86,58,56,"#f4e3c4"],[140,46,66,"#eab7a0"],[500,60,60,"#f4e3c4"],[556,50,70,"#e9c49a"],[602,58,54,"#f1d9b0"],[656,64,66,"#eab7a0"]])
+    k.palazzo(hx, 330, hw, hh, { wall:c, gh:14, fh:24, ww:8, wh:12, cols:2, boxes:0.4, quoins:false, ground:"door", pots:false });
+  k.rect(110, 150, 36, 180, "#d8cdb5"); k.plaster(110, 150, 36, 180); k.stones(110, 150, 36, 180, 0.07);
+  k.rect(106, 146, 44, 8, "#c8bca2"); k.rect(114, 126, 28, 22, "#d8cdb5"); k.arch(120, 128, 16, 18, "#3a3330"); k.rect(110, 120, 36, 8, "#b5553f"); k.blob(128, 190, 10, "#f2ede2");
+  k.dome(60, 262, 26, "#e9e2d0", "rgba(0,0,0,.12)"); k.rect(36, 262, 48, 10, "#f2ece0");
+  k.rect(640, 180, 34, 60, "#d8cdb5"); k.ghibMerlons(640, 180, 34, "#d8cdb5");   // Rocca
+  // funicolare
+  g.strokeStyle = "#5a5a5a"; g.lineWidth = 3; g.beginPath(); g.moveTo(486, 500); g.lineTo(640, 340); g.stroke();
+  g.save(); g.translate(560, 420); g.rotate(-0.8); k.rect(-18, -12, 36, 22, "#c62828"); for (let i=0;i<3;i++) k.rect(-14+i*11, -8, 8, 8, "#cfe6f2"); g.restore();
+  // città bassa e giardini
+  GROUND(k);
+  k.hedge(-10, 470, 140, 24); k.bloomTree(170, 488, 0.9, "#4f8a3f", ["#ffffff","#ffd6e7"]);
+  k.flowerBed(0, 488, 216, 14, ["#e53935","#ffffff","#ffca28"]); k.flowerBed(600, 486, 120, 16, ["#ec407a","#ffffff"]);
+  k.pot(510, 530, 1, "ball"); k.pot(700, 530, 1, "lemon"); k.lamp(640, 530, 70);
+});
+
+/* --- BRESCIA: Torre della Pallata, Duomo Nuovo, piazza della Loggia e la Mille Miglia --- */
+const bresciaScene = makeCity("brescia", (g,k)=>{
+  k.hill([[0,320],[200,300],[420,240],[560,220],[720,250]], "#7f9a78");
+  k.rect(560, 196, 90, 30, "#d8cdb5"); k.ghibMerlons(560, 196, 90, "#d8cdb5");   // castello sul Cidneo
+  // Torre della Pallata
+  k.rect(70, 110, 64, 390, "#cfc2a6"); k.plaster(70, 110, 64, 390); k.stones(70, 110, 64, 390, 0.08); k.rect(128, 110, 6, 390, "rgba(0,0,0,.1)");
+  k.ghibMerlons(66, 110, 72, "#cfc2a6"); k.rect(80, 64, 44, 40, "#cfc2a6"); k.dome(102, 64, 20, "#7e8c86", null); k.blob(102, 180, 12, "#f2ede2"); g.strokeStyle = "#333"; g.lineWidth = 2; g.beginPath(); g.moveTo(102,180); g.lineTo(102,172); g.stroke();
+  k.rect(80, 430, 44, 70, "#e8e1d0"); k.arch(88, 444, 28, 40, "#4f6f84"); k.statue(102, 430, 0.8);   // fontana
+  k.palazzo(-12, 500, 84, 170, { wall:"#f0d6a8", shutter:"#5e3a2a", boxes:0.8, cols:2, ground:"door" });
+  k.palazzo(134, 500, 84, 150, { wall:"#e8b49a", shutter:"#3c5b3a", boxes:0.9, cols:2, ground:"shops", awning:["#1f4e79","#ffffff"] });
+  // Duomo Nuovo e Loggia
+  k.rect(500, 240, 150, 260, "#efe9dc"); k.plaster(500, 240, 150, 260); k.columns(512, 300, 126, 150, 6, "#f8f4ec"); k.pediment(500, 300, 150, 34, "#efe9dc");
+  k.rect(540, 200, 70, 44, "#efe9dc"); k.dome(575, 200, 40, "#6f9c8f", "rgba(255,255,255,.25)");
+  k.rect(650, 330, 80, 170, "#f4efe4"); k.plaster(650, 330, 80, 170); for (let i=0;i<3;i++) k.arch(656+i*24, 430, 18, 70, "#5a4a3c");
+  k.rect(670, 230, 40, 100, "#e8e0cc"); k.blob(690, 270, 15, "#1f3f99"); for (let i=0;i<12;i++) k.blob(690+Math.cos(i/6*Math.PI)*10, 270+Math.sin(i/6*Math.PI)*10, 1.4, "#e0b84a");
+  for (const mx of [680, 700]) { k.blob(mx, 222, 4, "#3a3a3a"); k.rect(mx-3, 226, 6, 4, "#3a3a3a"); }   // i "macc de le ure"
+  GROUND(k); k.car(560, 520, 1.1, "#c62828"); k.car(660, 528, 0.9, "#ececec");
+  k.flowerBed(0, 488, 216, 14, ["#1e88e5","#ffffff","#ffca28"]); k.pot(200, 530, 1, "oleander");
+});
+
+/* --- TORINO: Mole Antonelliana, Gran Madre, le Alpi innevate, il tram --- */
+const torinoScene = makeCity("torino", (g,k)=>{
+  const A = [[0,200],[60,120],[120,170],[200,90],[280,160],[360,110],[460,170],[540,100],[620,160],[720,120]];
+  k.hill(A, "#9fb0c0"); g.save(); g.beginPath(); g.moveTo(0,560); A.forEach(([x,y])=>g.lineTo(x,y)); g.lineTo(W,560); g.closePath(); g.clip();
+  g.fillStyle = "#ffffff"; A.forEach(([x,y],i)=>{ if (i && y < 140){ g.beginPath(); g.moveTo(x-28,y+30); g.lineTo(x,y); g.lineTo(x+28,y+30); g.closePath(); g.fill(); } }); g.restore();
+  k.hill([[0,330],[100,290],[180,300],[300,330],[720,340]], "#6c9460");
+  k.dome(110, 286, 18, "#e9e2d0", null); k.rect(94, 286, 32, 10, "#f2ece0");   // Superga
+  // Gran Madre
+  k.rect(10, 330, 200, 170, "#efe8da"); k.plaster(10, 330, 200, 170); k.pediment(30, 360, 160, 36, "#efe8da"); k.columns(36, 362, 148, 120, 6, "#fbf7ef");
+  k.rect(30, 482, 160, 18, "#e4dccb"); k.rect(70, 294, 80, 38, "#efe8da"); k.dome(110, 294, 44, "#8fa6a8", "rgba(255,255,255,.25)");
+  // Mole Antonelliana
+  const mx = 610;
+  k.rect(mx-52, 310, 104, 190, "#e2d6bf"); k.plaster(mx-52, 310, 104, 190); k.columns(mx-48, 330, 96, 120, 8, "#f2ead9"); k.rect(mx-56, 300, 112, 12, "#d6c9ae");
+  g.fillStyle = "#8a9aa0"; g.beginPath(); g.moveTo(mx-52, 302); g.quadraticCurveTo(mx-50, 220, mx-14, 180); g.lineTo(mx+14, 180); g.quadraticCurveTo(mx+50, 220, mx+52, 302); g.closePath(); g.fill();
+  g.strokeStyle = "rgba(255,255,255,.3)"; g.lineWidth = 2; for (const f of [-30,-10,10,30]){ g.beginPath(); g.moveTo(mx+f*1.6, 302); g.quadraticCurveTo(mx+f*1.2, 230, mx+f*0.4, 182); g.stroke(); }
+  k.rect(mx-14, 150, 28, 32, "#e2d6bf"); k.columns(mx-14, 154, 28, 24, 4, "#f2ead9"); k.rect(mx-16, 146, 32, 6, "#d6c9ae");
+  k.poly([[mx-10,148],[mx,10],[mx+10,148]], "#c9c2b2"); k.poly([[mx,10],[mx+10,148],[mx+3,148]], "rgba(0,0,0,.15)"); k.blob(mx, 8, 4, "#c9a227");
+  GROUND(k); k.tram(500, 512, 1.1, "#f28c28");
+  k.flowerBed(0, 500, 216, 12, ["#e53935","#ffffff","#1e88e5"]); k.pot(220, 530, 1, "ball"); k.pot(700, 534, 1, "oleander");
+});
+
+/* --- MILANO: Duomo con la Madonnina, Bosco Verticale e grattacieli --- */
+const milanoScene = makeCity("milano", (g,k)=>{
+  // Duomo
+  const DX = -10, DW = 230, DT = 270, MW = "#f3ece6";
+  k.rect(DX, DT, DW, 230, MW); k.plaster(DX, DT, DW, 230);
+  k.poly([[DX, DT],[DX+DW/2, DT-70],[DX+DW, DT]], MW);
+  g.strokeStyle = "rgba(180,160,150,.5)"; g.lineWidth = 1.5; for (let x=DX+8; x<DX+DW; x+=14){ g.beginPath(); g.moveTo(x, DT-6); g.lineTo(x, 500); g.stroke(); }
+  for (const sx of [DX+6, DX+40, DX+76, DX+DW-82, DX+DW-46, DX+DW-12]) { k.rect(sx-4, DT-40, 8, 50, MW); k.poly([[sx-5,DT-40],[sx,DT-70],[sx+5,DT-40]], MW); k.blob(sx, DT-72, 2, "#e8e0d8"); }
+  for (const sx of [DX+58, DX+DW-64]) { k.rect(sx-3, DT-80, 6, 60, MW); k.poly([[sx-4,DT-80],[sx,DT-104],[sx+4,DT-80]], MW); }
+  k.rect(DX+DW/2-6, DT-170, 12, 110, MW); k.poly([[DX+DW/2-8,DT-170],[DX+DW/2,DT-220],[DX+DW/2+8,DT-170]], MW); k.statue(DX+DW/2, DT-218, 0.55, "#e8c13a");
+  for (let i=0;i<5;i++){ k.gothicWindow(DX+18+i*42, DT+40, 18, 56, "#fbf8f4"); k.rect(DX+12+i*42, DT+150, 30, 80, "#fbf8f4"); k.arch(DX+16+i*42, DT+170, 22, 60, "#4a3f3a"); }
+  k.blob(DX+DW/2, DT+10, 12, "#fbf8f4"); k.blob(DX+DW/2, DT+10, 8, "#7fa8c8");
+  // Bosco Verticale e grattacielo con la guglia
+  for (const [tx, tw, tt] of [[500, 70, 150], [576, 62, 200]]){
+    k.rect(tx, tt, tw, 500-tt, "#c9c2b6"); for (let y=tt+6; y<500; y+=16){ k.rect(tx-4, y+10, tw+8, 4, "#e9e4da");
+      for (let i=0;i<tw/9;i++) k.blob(tx-2+k.rnd()*(tw+4), y+8-k.rnd()*6, 4+k.rnd()*2, ["#3f7d3a","#5a9a45","#7cb342","#2f6b2f"][i%4]);
+      for (let i=0;i<3;i++) k.rect(tx+6+i*(tw-12)/3, y, 8, 8, "#6f8fa3"); } }
+  const gx = 650; g.fillStyle = "#7fb0cc"; g.beginPath(); g.moveTo(gx, 500); g.lineTo(gx, 140); g.quadraticCurveTo(gx+40, 100, gx+70, 70); g.lineTo(gx+70, 500); g.closePath(); g.fill();
+  g.strokeStyle = "rgba(255,255,255,.35)"; g.lineWidth = 1; for (let y=150; y<500; y+=12){ g.beginPath(); g.moveTo(gx, y); g.lineTo(gx+70, y); g.stroke(); }
+  k.rect(gx+66, 10, 3, 64, "#d9d9d9");
+  GROUND(k, "#cfc8bc"); k.tram(500, 516, 1.1, "#f2a23a");
+  k.flowerBed(0, 500, 216, 12, ["#e53935","#ffffff","#ec407a"]); k.pot(210, 532, 1, "ball");
+});
+
+/* --- BOLOGNA: le Due Torri, San Petronio, i portici rossi e San Luca sul colle --- */
+const bolognaScene = makeCity("bologna", (g,k)=>{
+  k.hill([[0,330],[160,320],[400,290],[560,240],[640,230],[720,250]], "#7f9a6e");
+  k.rect(600, 214, 40, 20, "#d9a77f"); k.dome(620, 214, 14, "#c97a4f", null); g.strokeStyle = "#b5523b"; g.lineWidth = 3; g.beginPath(); g.moveTo(600, 230); g.quadraticCurveTo(520, 270, 486, 300); g.stroke();   // San Luca e il portico
+  // Due Torri
+  const T = "#b5654a";
+  g.save(); g.translate(0, 34);   // la cima degli Asinelli resta dentro il fondale
+  k.rect(120, 20, 40, 480, T); k.plaster(120, 20, 40, 480); k.stones(120, 20, 40, 480, 0.07); k.rect(154, 20, 6, 480, "rgba(0,0,0,.1)");
+  k.rect(116, 14, 48, 8, "#9a5040"); k.rect(126, -6, 28, 20, T); k.ghibMerlons(126, -6, 28, "#9a5040"); for (const y of [80, 200, 320]) k.rect(134, y, 10, 16, "#3a2a22");
+  g.restore();
+  g.save(); g.translate(78, 500); g.rotate(-0.07); k.rect(-20, -250, 40, 250, "#c07258"); k.plaster(-20, -250, 40, 250); k.stones(-20, -250, 40, 250, 0.07); k.rect(-22, -254, 44, 6, "#9a5040"); g.restore();
+  k.palazzo(-12, 500, 70, 160, { wall:"#d86e4a", trim:"#f6dcc4", shutter:"#3c5b3a", ground:"arcade", cols:2, boxes:0.8 });
+  // San Petronio
+  k.rect(500, 230, 220, 270, "#c1754f"); k.plaster(500, 230, 220, 270); k.stones(500, 230, 220, 100, 0.06);
+  k.rect(500, 330, 220, 170, "#f2e2dc"); for (let x=504; x<720; x+=16) k.rect(x, 330, 8, 170, "rgba(214,130,130,.35)");
+  for (const dx of [540, 610, 680]) k.arch(dx-14, 420, 28, 80, "#5a3d2b");
+  k.poly([[500,230],[610,190],[720,230]], "#c1754f");
+  k.palazzo(640, 500, 82, 150, { wall:"#c95a3c", trim:"#f6dcc4", shutter:"#3c5b3a", ground:"arcade", cols:2, boxes:0.9 });
+  GROUND(k, "#d3b9a3", "rgba(120,60,40,.1)");
+  k.flowerBed(60, 500, 156, 12, ["#e53935","#ffffff","#fdd835"]); k.pot(520, 532, 1, "lemon"); k.pot(620, 532, 1, "oleander");
+});
+
+/* --- GENOVA: la Lanterna, il porto con le gru, le case colorate di Boccadasse --- */
+const genovaScene = makeCity("genova", (g,k)=>{
+  k.hill([[0,180],[100,150],[220,200],[360,260],[720,300]], "#6f8f62");
+  // case colorate che salgono sul colle
+  const CC = ["#f2c94c","#e57c5a","#f4a7a0","#9fd0c2","#f6e3b4","#e8a33d","#d9534f","#c9e0a8"];
+  for (let r=0;r<3;r++) for (let i=0;i<5;i++){ const x = -10 + i*46 + r*10, base = 320 + r*90, h = 90 + ((i+r)%3)*20;
+    k.palazzo(x, base, 46, h, { wall: CC[(i+r*3)%CC.length], shutter:"#2f7d32", gh: 16, fh: 30, ww: 9, wh: 15, cols: 2, boxes: 0.5, ground:"door", pots:false, quoins:false }); }
+  k.laundry(36, 88, 380, null); k.laundry(110, 170, 470, null);
+  // mare, porto e Lanterna
+  k.sea(340, 486, W, "#3e8fb8", "#1f5d86");
+  k.crane(560, 340, 0.9, "#f2b705"); k.crane(520, 340, 0.7, "#d9534f");
+  k.rect(486, 330, 120, 12, "#9a9a9a"); for (let i=0;i<4;i++) k.rect(490+i*28, 312, 24, 18, ["#c62828","#1f6fb2","#2e7d32","#f2b705"][i]);
+  k.rect(640, 300, 60, 160, "#9c9a8f"); k.plaster(640, 300, 60, 160);
+  k.rect(655, 170, 30, 130, "#efe8da"); k.rect(650, 166, 40, 8, "#d8d0c0"); k.rect(660, 100, 20, 66, "#efe8da"); k.rect(656, 96, 28, 6, "#d8d0c0");
+  k.rect(662, 74, 16, 22, "#bfe0f0"); k.dome(670, 74, 9, "#6b6f72", null); for (const y of [210, 140]) k.rect(667, y, 6, 12, "#3a3a3a");
+  g.fillStyle = "rgba(255,240,170,.35)"; g.beginPath(); g.moveTo(670, 84); g.lineTo(486, 60); g.lineTo(486, 110); g.closePath(); g.fill();
+  k.boat(560, 430, 1, "#1f6fb2"); k.boat(680, 480, 0.8, "#c62828"); k.sailboat(620, 400, 0.6); k.gull(600, 250, 1); k.gull(520, 220, 0.8);
+  GROUND(k, "#d4c9b6"); k.pot(200, 532, 1, "lemon"); k.pot(520, 532, 1, "oleander"); k.lamp(160, 532, 68);
+});
+
+/* --- FIRENZE: Cupola del Brunelleschi, Campanile di Giotto, Palazzo Vecchio, Ponte Vecchio --- */
+const firenzeScene = makeCity("firenze", (g,k)=>{
+  k.hill([[0,300],[140,250],[300,270],[460,240],[620,260],[720,240]], "#7f9a6e");
+  for (const [cx,cy] of [[30,300],[60,290],[620,270],[660,262],[700,256],[250,280]]) k.cypress(cx, cy, 0.45);
+  // Palazzo Vecchio
+  k.rect(20, 260, 150, 200, "#d9c7a5"); k.plaster(20, 260, 150, 200); k.stones(20, 260, 150, 200, 0.06); k.ghibMerlons(16, 260, 158, "#c9b590");
+  for (let r=0;r<2;r++) for (let i=0;i<4;i++) k.gothicWindow(36+i*36, 300+r*60, 12, 24, "#efe4cc");
+  k.rect(80, 110, 30, 150, "#d9c7a5"); k.stones(80, 110, 30, 150, 0.07); k.rect(74, 100, 42, 14, "#c9b590"); k.ghibMerlons(74, 100, 42, "#c9b590");
+  k.rect(86, 60, 18, 40, "#d9c7a5"); k.poly([[84,62],[95,36],[106,62]], "#a5553a"); k.blob(95, 140, 7, "#1f3f99");
+  // Ponte Vecchio sull'Arno
+  k.sea(440, 0, 216, "#6fa3a0", "#4f7f7c");
+  k.rect(-10, 420, 226, 30, "#d9c7a5"); for (const ax of [10, 90, 170]) { g.fillStyle = "#4f7f7c"; g.beginPath(); g.ellipse(ax+20, 452, 30, 18, 0, Math.PI, 0); g.fill(); }
+  for (let i=0;i<7;i++) k.rect(-10+i*32, 386 - (i%3)*8, 32, 36 + (i%3)*8, ["#e8a33d","#e57c5a","#f2c94c","#d9a77f","#f4a7a0","#e8a33d","#f2c94c"][i]), k.rect(-4+i*32, 396, 10, 12, "#3b4a5a");
+  // Duomo: cupola e campanile di Giotto
+  k.rect(560, 290, 160, 210, "#f2ece2"); for (let x=560; x<720; x+=20) k.rect(x, 290, 4, 210, "#5f8f6e"); for (let y=300; y<500; y+=40) k.rect(560, y, 160, 4, "#d77c7c");
+  k.rect(590, 230, 110, 62, "#f2ece2"); for (let x=594; x<700; x+=16) k.rect(x, 236, 6, 50, "#5f8f6e");
+  k.dome(645, 232, 62, "#c8653f", "#f4efe6");
+  k.rect(500, 90, 46, 410, "#f2ece2"); for (let y=90; y<500; y+=56){ k.rect(500, y, 46, 6, "#d77c7c"); k.rect(504, y+10, 4, 40, "#5f8f6e"); k.rect(538, y+10, 4, 40, "#5f8f6e"); }
+  for (let r=0;r<3;r++) k.gothicWindow(514, 130+r*100, 18, 46, "#fbf8f4"); k.rect(496, 82, 54, 10, "#e8e0d2");
+  GROUND(k, "#d6ccba"); k.flowerBed(0, 500, 216, 12, ["#e53935","#ffffff","#8e24aa"]); k.pot(220, 532, 1, "lemon"); k.pot(700, 532, 1, "lemon");
+});
+
+/* --- NAPOLI: il Vesuvio, il golfo, il Maschio Angioino, i pini e i panni stesi --- */
+const napoliScene = makeCity("napoli", (g,k)=>{
+  // il Vesuvio, sul lato destro (visibile accanto al palazzo)
+  k.hill([[380,330],[500,220],[560,170],[600,188],[640,160],[700,200],[760,260]], "#8a7f96"); k.ridgeLight([[500,220],[560,170],[600,188],[640,160],[700,200]]);
+  k.hill([[380,330],[560,250],[700,270],[760,300]], "#7a7088");
+  g.fillStyle = "rgba(255,255,255,.55)"; g.beginPath(); g.ellipse(640, 140, 30, 9, 0, 0, Math.PI*2); g.fill();
+  k.sea(330, 0, W, "#3e9ac0", "#1f5d86");
+  for (let i=0;i<6;i++) k.sailboat(500 + i*36, 380 + (i%2)*30, 0.5);
+  k.boat(600, 450, 1, "#1f6fb2"); k.boat(680, 420, 0.8, "#c62828");
+  // Maschio Angioino
+  const MA = "#7d7468";
+  k.rect(-10, 300, 226, 200, MA); k.plaster(-10, 300, 226, 200); k.stones(-10, 300, 226, 200, 0.07);
+  for (const tx of [10, 100, 190]){ k.rect(tx-28, 260, 56, 240, "#857b6e"); k.stones(tx-28, 260, 56, 240, 0.08); k.rect(tx-32, 252, 64, 10, "#6f665b"); k.ghibMerlons(tx-32, 252, 64, "#6f665b"); k.rect(tx+18, 260, 10, 240, "rgba(0,0,0,.1)"); }
+  k.rect(130, 340, 40, 160, "#f2ede2"); k.arch(136, 400, 28, 100, "#4a3f3a"); k.rect(132, 360, 36, 8, "#e0d8c8");
+  // case colorate con i panni stesi
+  k.palazzo(486, 500, 100, 150, { wall:"#e8a33d", shutter:"#2f7d32", cols:3, boxes:0.7, ground:"shops", awning:["#c62828","#ffffff"] });
+  k.palazzo(584, 500, 140, 170, { wall:"#f4a7a0", shutter:"#2f7d32", cols:4, boxes:0.7, ground:"shops", awning:["#1f4e79","#ffffff"], balcony:true });
+  k.laundry(500, 580, 400, null); k.laundry(600, 710, 380, ["#ffffff","#fdd835","#4a90d9","#e53950"]);
+  k.pine(230, 500, 1.1);
+  GROUND(k, "#c9c0b0"); k.pot(520, 532, 1, "lemon"); k.pot(700, 532, 1, "lemon"); k.vespa(620, 528, 1.1, "#e53935");
+  k.flowerBed(0, 500, 200, 12, ["#e53935","#ffffff","#fdd835"]);
+});
+
+/* --- BARI: Basilica di San Nicola, il lungomare, il Teatro Margherita, le orecchiette --- */
+const bariScene = makeCity("bari", (g,k)=>{
+  k.sea(300, 0, W, "#4ab0d0", "#2a7fa8");
+  // Basilica di San Nicola
+  const SN = "#efe5cf";
+  k.rect(-10, 240, 226, 260, SN); k.plaster(-10, 240, 226, 260); k.stones(-10, 240, 226, 260, 0.05);
+  k.pediment(30, 300, 150, 60, SN); k.blob(105, 270, 16, "#e2d6bc"); k.blob(105, 270, 11, "#8fb3c8");
+  for (const tx of [-10, 176]){ k.rect(tx, 180, 40, 320, "#e8dcc2"); k.stones(tx, 180, 40, 320, 0.06); k.rect(tx-2, 174, 44, 8, "#d8cbb0"); }
+  for (let i=0;i<3;i++) k.arch(60+i*30, 360, 18, 40, "#4a3f3a"); k.arch(92, 430, 26, 70, "#4a3f3a"); k.rect(88, 424, 34, 6, "#d8cbb0");
+  // Teatro Margherita sull'acqua e lungomare
+  k.rect(520, 300, 170, 110, "#f2e2c4"); k.plaster(520, 300, 170, 110); k.rect(520, 410, 170, 10, "#d8cbb0");
+  for (let i=0;i<5;i++) k.arch(530+i*32, 330, 20, 44, "#5d7a8c"); k.pediment(560, 300, 90, 30, "#f2e2c4"); k.dome(605, 276, 16, "#6f9c8f", null);
+  for (let i=0;i<5;i++) k.rect(530+i*34, 420, 6, 40, "#cfc6b2");
+  k.rect(486, 470, 234, 30, "#e8e0cf"); for (let x=486; x<720; x+=14) k.rect(x, 462, 4, 10, "#f4efe4"); k.rect(486, 460, 234, 4, "#f4efe4");
+  for (const lx of [500, 590, 680]) { k.rect(lx, 400, 3, 62, "#2c2f33"); k.rect(lx-8, 398, 19, 3, "#2c2f33"); k.blob(lx-7, 402, 3, "#ffe7a8"); k.blob(lx+10, 402, 3, "#ffe7a8"); }
+  k.boat(600, 444, 0.9, "#1f6fb2"); k.gull(400, 200, 1); k.gull(560, 230, 0.8);
+  // il tavolo delle orecchiette fatte in casa
+  GROUND(k, "#dcd3c2");
+  k.rect(150, 488, 66, 6, "#a8744f"); k.rect(154, 494, 4, 24, "#8a5a3c"); k.rect(206, 494, 4, 24, "#8a5a3c");
+  for (let i=0;i<40;i++) k.blob(156 + k.rnd()*54, 486 - k.rnd()*4, 1.6, "#f2dfa8");
+  k.pot(40, 532, 1, "oleander"); k.pot(700, 532, 1, "lemon"); k.cactus(520, 530, 0.8);
+});
+
+/* --- CATANZARO: il Ponte Bisantis, la città sul colle, fichi d'india e il mare Ionio --- */
+const catanzaroScene = makeCity("catanzaro", (g,k)=>{
+  k.sea(250, 0, W, "#5ab4d6", "#3e94bf");
+  k.hill([[0,200],[100,170],[230,190],[360,250],[480,260],[600,230],[720,210]], "#7f9a62");
+  k.hill([[0,300],[120,250],[260,300],[480,330],[600,300],[720,280]], "#5f8a4a");
+  // la città sul colle
+  const CC = ["#f4e3c4","#e9c49a","#f1d9b0","#eab7a0","#ffffff"];
+  for (let i=0;i<6;i++) k.palazzo(-10 + i*38, 330 - (i%3)*14, 38, 70 + (i%2)*20, { wall: CC[i%CC.length], gh:14, fh:22, ww:7, wh:11, cols:2, boxes:0.5, quoins:false, ground:"door", pots:false });
+  k.rect(150, 170, 26, 120, "#e8dcc2"); k.rect(146, 166, 34, 8, "#cdbb9c"); k.poly([[150,168],[163,140],[176,168]], "#a5553a");   // campanile del Duomo
+  // Ponte Bisantis: il grande arco in cemento
+  g.strokeStyle = "#d6d2c8"; g.lineWidth = 14; g.beginPath(); g.moveTo(470, 470); g.quadraticCurveTo(600, 200, 740, 470); g.stroke();
+  k.rect(470, 300, 270, 12, "#e6e2d8"); k.rect(470, 312, 270, 3, "rgba(0,0,0,.15)");
+  for (let x=486; x<730; x+=20){ const t = (x-470)/270, y = 470 - 4*t*(1-t)*270*0.5 - 0; k.rect(x, 312, 4, Math.max(0, y-312), "#d6d2c8"); }
+  for (let x=474; x<740; x+=8) k.rect(x, 294, 2, 6, "#888");
+  // macchia mediterranea
+  GROUND(k, "#d8cbb6");
+  k.cactus(40, 500, 1.1); k.cactus(180, 500, 0.9); k.cactus(690, 500, 1);
+  k.bloomTree(110, 500, 0.8, "#4f8a3f", ["#ffffff","#f6e7a8"]);   // bergamotto
+  k.flowerBed(486, 488, 160, 12, ["#e53935","#ff6f91","#ffffff"]); k.pot(220, 532, 1, "oleander"); k.pot(520, 532, 1, "lemon");
+});
+
+/* --- PALERMO: la Cattedrale, San Giovanni degli Eremiti con le cupole rosse, palme e il carretto --- */
+const palermoScene = makeCity("palermo", (g,k)=>{
+  k.hill([[300,330],[440,180],[520,140],[600,160],[720,240]], "#b29a7c"); k.ridgeLight([[440,180],[520,140],[600,160],[720,240]]);   // Monte Pellegrino
+  // Cattedrale
+  const PC = "#e3c48c";
+  k.rect(-10, 280, 226, 220, PC); k.plaster(-10, 280, 226, 220); k.stones(-10, 280, 226, 220, 0.05);
+  for (let x=-10; x<216; x+=9) k.poly([[x,280],[x+4.5,270],[x+9,280]], PC);
+  for (const tx of [10, 190]){ k.rect(tx-16, 180, 32, 320, "#dbb97f"); k.rect(tx-16, 176, 32, 6, "#c9a66a"); k.poly([[tx-12,178],[tx,150],[tx+12,178]], "#c9a66a");
+    for (const y of [220, 300]) k.gothicWindow(tx-6, y, 12, 30, "#f6e8c8"); }
+  k.dome(110, 280, 36, "#6f9c8f", "rgba(255,255,255,.25)");
+  for (let i=0;i<4;i++) k.gothicWindow(36+i*38, 330, 16, 40, "#f6e8c8");
+  for (let i=0;i<3;i++) k.arch(52+i*42, 420, 28, 80, "#4a3f3a");
+  // San Giovanni degli Eremiti
+  k.rect(520, 360, 160, 140, "#d9b98a"); k.plaster(520, 360, 160, 140); k.rect(560, 300, 70, 62, "#d9b98a");
+  for (const [dx,dy,r] of [[545,360,22],[600,300,26],[655,360,22],[580,360,18],[625,360,18]]) k.dome(dx, dy, r, "#d2553f", null, false);
+  for (let i=0;i<3;i++) k.arch(540+i*44, 410, 20, 50, "#4a3f3a");
+  k.palm(500, 500, 1); k.palm(700, 500, 1.15); k.palm(225, 500, 0.8);
+  GROUND(k, "#dccbb0"); k.cart(600, 532, 1.1);
+  k.flowerBed(0, 500, 200, 12, ["#e53935","#fdd835","#ff6f91"]); k.pot(40, 534, 1, "lemon");
+});
+
+/* --- CAGLIARI: Bastione di Saint Remy, Torre dell'Elefante, i fenicotteri e la Sella del Diavolo --- */
+const cagliariScene = makeCity("cagliari", (g,k)=>{
+  k.sea(300, 0, W, "#4ab8d6", "#2a88b0");
+  k.hill([[560,330],[610,270],[650,300],[690,250],[740,330]], "#c2a57c"); k.ridgeLight([[560,330],[610,270],[650,300],[690,250]]);   // Sella del Diavolo
+  // Castello: Torre dell'Elefante e case
+  k.rect(150, 150, 50, 150, "#e9dcc0"); k.stones(150, 150, 50, 150, 0.08); k.ghibMerlons(146, 150, 58, "#d8c9a8");
+  for (const [hx,hw,hh,c] of [[-10,60,70,"#f4e3c4"],[46,56,90,"#f2c49a"],[96,56,80,"#f6e7d0"]]) k.palazzo(hx, 300, hw, hh, { wall:c, gh:14, fh:24, ww:8, wh:12, cols:2, boxes:0.6, quoins:false, ground:"door", pots:false });
+  // Bastione di Saint Remy
+  const SR = "#efe6d2";
+  k.rect(-10, 300, 226, 200, SR); k.plaster(-10, 300, 226, 200); k.stones(-10, 300, 226, 200, 0.05);
+  k.rect(-14, 294, 234, 10, "#fbf6ea"); for (let x=-10; x<216; x+=12) k.rect(x, 280, 6, 16, "#fbf6ea"); k.rect(-14, 278, 234, 4, "#fbf6ea");
+  k.arch(60, 340, 90, 160, "#cfc5b0"); k.arch(70, 360, 70, 140, "#6c5f52"); k.columns(-6, 360, 56, 140, 2, "#fbf6ea"); k.columns(160, 360, 56, 140, 2, "#fbf6ea");
+  k.palm(30, 280, 0.7); k.palm(180, 280, 0.7);
+  // laguna con i fenicotteri
+  k.rect(486, 440, 234, 60, "#7ab9c2"); for (let i=0;i<10;i++) k.flamingo(500 + i*22, 478 + (i%3)*8, 0.9);
+  k.boat(560, 400, 0.8, "#ffffff"); k.gull(400, 200, 1);
+  GROUND(k, "#e2d8c4");
+  k.flowerBed(486, 500, 234, 10, ["#d81b60","#ec407a","#ffffff"]);   // buganvillea
+  k.pot(220, 532, 1, "oleander"); k.pot(520, 532, 1, "lemon"); k.cactus(690, 532, 0.8);
+});
+
+/* --- ROMA: il Colosseo, la cupola di San Pietro, il Vittoriano, i pini e la Vespa --- */
+const romaScene = makeCity("roma", (g,k)=>{
+  k.hill([[0,320],[200,300],[400,320],[720,300]], "#8fa070");
+  // cupola di San Pietro (lontana)
+  k.rect(600, 250, 100, 70, "#e9e2d0"); k.columns(604, 262, 92, 50, 6, "#f6f1e6"); k.dome(650, 250, 48, "#9fb4bf", "rgba(255,255,255,.35)"); k.statue(650, 180, 0.6, "#e9e2d0");
+  // Vittoriano
+  k.rect(486, 330, 150, 170, "#f6f3ec"); k.plaster(486, 330, 150, 170); k.columns(492, 350, 138, 110, 9, "#ffffff"); k.rect(482, 322, 158, 10, "#e9e4d8");
+  for (const qx of [500, 620]) { k.rect(qx-14, 300, 28, 22, "#5d7a6a"); k.blob(qx, 296, 8, "#5d7a6a"); }
+  k.rect(486, 460, 150, 40, "#efeae0"); for (let y=462; y<500; y+=6) k.rect(486, y, 150, 2, "rgba(0,0,0,.06)");
+  // Colosseo
+  const CO = "#d9c09a";
+  g.save(); g.beginPath(); g.moveTo(-10, 500); g.lineTo(-10, 200); g.quadraticCurveTo(80, 180, 216, 240); g.lineTo(216, 500); g.closePath(); g.clip();
+  k.rect(-10, 180, 230, 320, CO); k.plaster(-10, 180, 230, 320); k.stones(-10, 180, 230, 320, 0.07);
+  for (let r=0;r<3;r++){ k.rect(-10, 300 + r*0 + r*66 - 66, 230, 6, "#c6ab84");
+    for (let i=0;i<7;i++) k.arch(-2+i*32, 250 + r*66, 22, 50, "#5a4636"); }
+  for (let i=0;i<7;i++) k.rect(4+i*32, 210, 8, 12, "#5a4636");
+  g.restore();
+  // pini di Roma e Vespa
+  k.pine(240, 500, 1.2); k.pine(700, 500, 1);
+  GROUND(k, "#d1c6b2"); k.vespa(580, 530, 1.2, "#7fc4c4");
+  k.flowerBed(0, 500, 200, 12, ["#e53935","#ffffff","#fdd835"]); k.pot(520, 534, 1, "oleander"); k.pot(690, 534, 1, "lemon");
+});
+
+/* sfondo della città: tappe disegnate a colori (stesso ordine di CITIES) */
+const SCENES = [()=>rivaScene(), trentoScene, bolzanoScene, veronaScene, triesteScene, veneziaScene, padovaScene, bergamoScene, bresciaScene, torinoScene,
+  milanoScene, bolognaScene, genovaScene, firenzeScene, napoliScene, bariScene, catanzaroScene, palermoScene, cagliariScene, romaScene];
 function drawCityScene(lv, th, alpha){
   if (alpha <= 0) return;
   ctx.save(); ctx.globalAlpha = alpha;
@@ -1582,8 +2046,23 @@ const Garage = {
   up(x){ if (this.swipeStart!==null){ const dx = x - this.swipeStart; if (Math.abs(dx)>50) this.change(dx<0?1:-1); } this.swipeStart=null; }
 };
 
-/* ---------- ROADMAP DELLE CITTÀ ---------- */
+/* ---------- SCORRIMENTO VERTICALE (Roadmap e scelta della città): dito, mouse o rotellina ---------- */
+const Scroller = {
+  make(min, max, start){ return { s: start, min, max, drag: null, vel: 0 }; },
+  down(o, y){ o.drag = { y, s: o.s, moved: 0, last: y }; o.vel = 0; },
+  move(o, y){ if (!o.drag) return; o.drag.moved = Math.max(o.drag.moved, Math.abs(y - o.drag.y)); o.vel = y - o.drag.last; o.drag.last = y;
+    o.s = Math.min(o.max, Math.max(o.min, o.drag.s + (y - o.drag.y))); },
+  up(o){ const tap = o.drag && o.drag.moved < 12; o.drag = null; return tap; },
+  wheel(o, dy){ o.s = Math.min(o.max, Math.max(o.min, o.s - dy)); },
+  update(o, dt){ if (!o.drag && Math.abs(o.vel) > 0.3){ o.s = Math.min(o.max, Math.max(o.min, o.s + o.vel)); o.vel *= Math.pow(0.004, dt); } },
+  bar(o, x, y0, y1){ if (o.max - o.min < 1) return; const h = (y1-y0) * 0.18, t = (o.s - o.min) / (o.max - o.min);
+    ctx.fillStyle = "rgba(255,255,255,.12)"; rrect(x, y0, 6, y1-y0, 3); ctx.fill();
+    ctx.fillStyle = "rgba(255,230,0,.7)"; rrect(x, y1 - h - t*(y1-y0-h), 6, h, 3); ctx.fill(); }
+};
+
+/* ---------- ROADMAP DELLE CITTÀ (20 tappe, si scorre) ---------- */
 const Roadmap = {
+  STEP: 118, Y0: 1080, TOP: 230, BOT: 1150,
   enter(){
     this.t = 0;
     this.buttons = [
@@ -1592,48 +2071,62 @@ const Roadmap = {
       muteBtn(),
       new Button(110, 1170, 500, 86, (x,y,w,h)=>banner(x,y,w,h,txt("play")), ()=>{ gameMode="road"; store.set("mode",gameMode); go(Game); }, 14),
     ];
+    const max = Math.max(0, (CITIES.length-1)*this.STEP - (this.Y0 - this.TOP - 60));
+    const reached = Math.min(maxLevel, CITIES.length-1);
+    this.sc = Scroller.make(0, max, Math.min(max, Math.max(0, reached*this.STEP - 380)));
   },
-  pos(i){ return [i%2 ? 480 : 240, 1080 - i*128]; },
-  update(dt){ this.t += dt; MenuBg.update(dt); this.buttons.forEach(b=>b.update(dt)); },
+  pos(i){ return [i%2 ? 480 : 240, this.Y0 - i*this.STEP + this.sc.s]; },
+  down(x,y){ if (y > this.TOP - 30 && y < this.BOT) Scroller.down(this.sc, y); },
+  move(x,y){ Scroller.move(this.sc, y); },
+  up(){ Scroller.up(this.sc); },
+  wheel(dy){ Scroller.wheel(this.sc, dy); },
+  update(dt){ this.t += dt; MenuBg.update(dt); Scroller.update(this.sc, dt); this.buttons.forEach(b=>b.update(dt)); },
   render(){
     MenuBg.render(); ctx.fillStyle = "rgba(5,8,20,.84)"; ctx.fillRect(0,0,W,H);
-    text("ROADMAP", 360, 120, 54, YELLOW, "center", "#000", 8);
-    text(txt("road_sub", LEVEL_EVERY), 360, 162, 19, "#ccc");
-    // città in arrivo
-    text(txt("coming"), 360, 214, 26, YELLOW);
-    COMING.forEach((c,i)=>{
-      const col = i%4, row = Math.floor(i/4), x = 22 + col*172, y = 236 + row*76;
-      ctx.fillStyle = "rgba(255,255,255,.07)"; rrect(x, y, 160, 64, 12); ctx.fill();
-      ctx.lineWidth = 2; ctx.setLineDash([6,6]); ctx.strokeStyle = "rgba(255,230,0,.35)"; ctx.stroke(); ctx.setLineDash([]);
-      fitText(c, x+80, y+25, 20, 140, "rgba(255,255,255,.75)");
-      fitText(txt("soon"), x+80, y+48, 14, 140, "rgba(255,230,0,.7)");
-    });
-    // percorso delle tappe giocabili
     const reached = Math.min(maxLevel, CITIES.length-1);
+    ctx.save(); ctx.beginPath(); ctx.rect(0, this.TOP - 40, W, this.BOT - this.TOP + 40); ctx.clip();
     ctx.lineWidth = 8; ctx.lineCap = "round";
-    const [tx,ty] = this.pos(CITIES.length-1);
-    ctx.setLineDash([10,12]); ctx.strokeStyle = "rgba(255,230,0,.35)"; ctx.beginPath(); ctx.moveTo(tx,ty); ctx.lineTo(360, 560); ctx.stroke(); ctx.setLineDash([]);
     for (let i=0;i<CITIES.length-1;i++){
       const [x1,y1] = this.pos(i), [x2,y2] = this.pos(i+1);
+      if (Math.max(y1,y2) < this.TOP - 80 || Math.min(y1,y2) > this.BOT + 80) continue;
       ctx.strokeStyle = i < reached ? YELLOW : "rgba(255,255,255,.2)"; ctx.setLineDash(i < reached ? [] : [10,12]);
       ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
     }
     ctx.setLineDash([]);
     for (let i=0;i<CITIES.length;i++){
       const [x,y] = this.pos(i), done = i <= reached, cur = i === reached;
+      if (y < this.TOP - 80 || y > this.BOT + 80) continue;
       if (cur){ ctx.globalAlpha = 0.4 + 0.3*Math.sin(this.t*4); blob(x, y, 50, YELLOW); ctx.globalAlpha = 1; }
       ctx.fillStyle = done ? YELLOW : "#2b2f38"; ctx.beginPath(); ctx.arc(x, y, 34, 0, Math.PI*2); ctx.fill();
       ctx.lineWidth = 4; ctx.strokeStyle = done ? "#111" : "rgba(255,255,255,.25)"; ctx.stroke();
       if (cur && ok(IMG["op"+OPS[operator]])){ ctx.save(); ctx.beginPath(); ctx.arc(x,y,30,0,Math.PI*2); ctx.clip(); img("op"+OPS[operator], x-30, y-30, 60, 60); ctx.restore(); }
       else if (done) text(String(i+1), x, y+2, 30, "#111");
       else { ctx.font="24px sans-serif"; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText("🔒", x, y+1); }
-      const right = i%2 === 0, lx = right ? x + 50 : x - 50;
-      fitText(CITIES[i], lx, y - 10, 30, 230, done ? "#fff" : "rgba(255,255,255,.45)", right ? "left" : "right", done ? "#000" : null, 5);
-      fitText(i===0 ? txt("stage1") : txt("stageN", i+1, i*LEVEL_EVERY), lx, y + 20, 17, 300, done ? YELLOW : "rgba(255,255,255,.35)", right ? "left" : "right");
+      // miniatura del fondale della città
+      // miniatura verso l'esterno, scritte verso il centro: il percorso resta libero
+      const right = i%2 === 0, tw = 118, th2 = 92, tx = right ? x - 52 - tw : x + 52, ty = y - th2/2;
+      ctx.save(); rrect(tx, ty, tw, th2, 12); ctx.clip();
+      const T = THEMES[i % THEMES.length], sg = ctx.createLinearGradient(0, ty, 0, ty+th2); sg.addColorStop(0, T.sky[0]); sg.addColorStop(1, T.sky[1]);
+      ctx.fillStyle = sg; ctx.fillRect(tx, ty, tw, th2);
+      const sw = th2 * W / 560; ctx.drawImage(SCENES[i % SCENES.length](), tx + tw/2 - sw/2, ty, sw, th2);
+      if (!done){ ctx.fillStyle = "rgba(0,0,0,.6)"; ctx.fillRect(tx, ty, tw, th2); }
+      ctx.restore(); ctx.lineWidth = 3; ctx.strokeStyle = done ? YELLOW : "rgba(255,255,255,.2)"; rrect(tx, ty, tw, th2, 12); ctx.stroke();
+      const lx = right ? x + 50 : x - 50, al = right ? "left" : "right", mw = right ? 320 : 320;
+      fitText(CITIES[i], lx, y - 12, 26, mw, done ? "#fff" : "rgba(255,255,255,.45)", al, done ? "#000" : null, 5);
+      fitText(i===0 ? txt("stage1") : txt("stageN", i+1, i*LEVEL_EVERY), lx, y + 18, 15, mw, done ? YELLOW : "rgba(255,255,255,.35)", al);
     }
+    ctx.restore();
+    // intestazione sopra la lista
+    const hg = ctx.createLinearGradient(0, 0, 0, this.TOP); hg.addColorStop(0, "rgba(5,8,20,1)"); hg.addColorStop(0.75, "rgba(5,8,20,.95)"); hg.addColorStop(1, "rgba(5,8,20,0)");
+    ctx.fillStyle = hg; ctx.fillRect(0, 0, W, this.TOP);
+    text("ROADMAP", 360, 120, 54, YELLOW, "center", "#000", 8);
+    text(txt("road_sub", LEVEL_EVERY), 360, 162, 19, "#ccc");
+    fitText((reached+1) + " / " + CITIES.length, 360, 196, 18, 300, "rgba(255,230,0,.8)");
+    Scroller.bar(this.sc, 704, this.TOP, this.BOT);
     this.buttons.forEach(b=>b.render());
   },
-  key(k){ if (k==="Escape") go(Menu); else if (k==="Enter"||k===" "){ gameMode="road"; go(Game); } }
+  key(k){ if (k==="Escape") go(Menu); else if (k==="Enter"||k===" "){ gameMode="road"; go(Game); }
+    else if (k==="ArrowUp") Scroller.wheel(this.sc, -120); else if (k==="ArrowDown") Scroller.wheel(this.sc, 120); }
 };
 
 /* ---------- AVVIO: il primo tocco accende l'audio (i browser bloccano la musica automatica) ---------- */
@@ -1683,45 +2176,63 @@ const NameGate = {
   tap(){ this.ask(); }, key(){ this.ask(); }
 };
 
-/* ---------- PARTITA SINGOLA: scelta della città ---------- */
+/* ---------- PARTITA SINGOLA: scelta della città (griglia che si scorre) ---------- */
 const CityPick = {
+  TOP: 250, BOT: 1280, CW: 214, CH: 262, GX: 18, GY: 20, COLS: 3,
   enter(){
     this.t = 0;
     this.buttons = [
       new Button(24, 24, 150, 64, (x,y,w,h)=>{ ctx.fillStyle="rgba(0,0,0,.6)"; rrect(x,y,w,h,16); ctx.fill();
         ctx.lineWidth=3; ctx.strokeStyle="rgba(255,230,0,.8)"; ctx.stroke(); text("◀ " + txt("menu"), x+w/2, y+h/2+2, 22, "#fff"); }, ()=>go(Menu), 8),
       muteBtn(),
-      ...CITIES.map((c,i)=>{ const x = 40 + (i%2)*340, y = 270 + Math.floor(i/2)*400;
-        return new Button(x, y, 300, 370, (bx,by,w,h)=>this.cardDraw(i,bx,by,w,h), ()=>this.pick(i), 6); }),
     ];
+    const rows = Math.ceil(CITIES.length / this.COLS), content = rows * (this.CH + this.GY) + 20;
+    const max = Math.max(0, content - (this.BOT - this.TOP));
+    const r0 = Math.floor(Math.min(singleCity, maxLevel) / this.COLS);
+    this.sc = Scroller.make(-max, 0, -Math.min(max, Math.max(0, r0*(this.CH+this.GY) - 200)));
   },
+  rect(i){ const c = i % this.COLS, r = Math.floor(i / this.COLS);
+    return [this.GX + c*(this.CW + this.GX), this.TOP + 10 + r*(this.CH + this.GY) + this.sc.s, this.CW, this.CH]; },
   locked(i){ return i > maxLevel; },
   pick(i){ if (this.locked(i)){ sfx.click && sfx.click(); return; }
     singleCity = i; gameMode = "single"; store.set("scity", i); store.set("mode", gameMode); go(Game); },
+  down(x,y){ if (y > this.TOP) { Scroller.down(this.sc, y); this.downAt = [x,y]; } },
+  move(x,y){ Scroller.move(this.sc, y); },
+  up(x,y){ if (Scroller.up(this.sc) && this.downAt){
+      for (let i=0;i<CITIES.length;i++){ const [cx,cy,w,h] = this.rect(i); if (x>=cx && x<=cx+w && y>=cy && y<=cy+h && y > this.TOP){ sfx.click(); this.pick(i); break; } } }
+    this.downAt = null; },
+  wheel(dy){ Scroller.wheel(this.sc, dy); },
   cardDraw(i,x,y,w,h){
     const th = THEMES[i % THEMES.length], lk = this.locked(i);
-    ctx.save(); rrect(x,y,w,h,22); ctx.clip();
+    ctx.save(); rrect(x,y,w,h,18); ctx.clip();
     const g = ctx.createLinearGradient(0,y,0,y+h); g.addColorStop(0, th.sky[0]); g.addColorStop(1, th.sky[1]);
     ctx.fillStyle = g; ctx.fillRect(x,y,w,h);
-    const sh = 560 * w / W; ctx.drawImage(SCENES[i % SCENES.length](), x, y+h-sh-64, w, sh);
-    ctx.fillStyle = "rgba(0,0,0,.78)"; ctx.fillRect(x, y+h-70, w, 70);
+    const sh = h - 54, sw = sh * W / 560; ctx.drawImage(SCENES[i % SCENES.length](), x + w/2 - sw/2, y, sw, sh);
+    ctx.fillStyle = "rgba(0,0,0,.8)"; ctx.fillRect(x, y+h-56, w, 56);
     if (lk){ ctx.fillStyle = "rgba(0,0,0,.55)"; ctx.fillRect(x,y,w,h); }
     ctx.restore();
-    ctx.lineWidth = 5; ctx.strokeStyle = lk ? "rgba(255,255,255,.25)" : YELLOW; rrect(x,y,w,h,22); ctx.stroke();
-    fitText(CITIES[i], x+w/2, y+h-46, 26, w-24, lk ? "#888" : "#fff");
-    if (lk){ ctx.font="56px sans-serif"; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText("🔒", x+w/2, y+130);
-      fitText(txt("reach_road"), x+w/2, y+h-18, 15, w-20, "rgba(255,230,0,.7)"); }
-    else fitText(txt("record_lc") + " " + (rec["s"+i] || 0) + "  ·  " + txt("th" + (i % THEMES.length)).toLowerCase(), x+w/2, y+h-18, 16, w-20, YELLOW);
+    ctx.lineWidth = 4; ctx.strokeStyle = lk ? "rgba(255,255,255,.25)" : (i === singleCity ? "#fff" : YELLOW); rrect(x,y,w,h,18); ctx.stroke();
+    fitText(CITIES[i], x+w/2, y+h-37, 21, w-16, lk ? "#888" : "#fff");
+    if (lk){ ctx.font="44px sans-serif"; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText("🔒", x+w/2, y+90);
+      fitText(txt("reach_road"), x+w/2, y+h-14, 13, w-16, "rgba(255,230,0,.7)"); }
+    else fitText(txt("record_lc") + " " + (rec["s"+i] || 0) + "  ·  " + txt("th" + (i % THEMES.length)).toLowerCase(), x+w/2, y+h-14, 14, w-16, YELLOW);
   },
-  update(dt){ this.t += dt; MenuBg.update(dt); this.buttons.forEach(b=>b.update(dt)); },
+  update(dt){ this.t += dt; MenuBg.update(dt); Scroller.update(this.sc, dt); this.buttons.forEach(b=>b.update(dt)); },
   render(){
     MenuBg.render(); ctx.fillStyle = "rgba(5,8,20,.84)"; ctx.fillRect(0,0,W,H);
-    text(txt("single_game"), 360, 140, 50, YELLOW, "center", "#000", 8);
-    text(txt("pick_sub"), 360, 190, 19, "#ccc");
-    text(txt("pick_sub2"), 360, 220, 17, "#999");
+    ctx.save(); ctx.beginPath(); ctx.rect(0, this.TOP, W, this.BOT - this.TOP); ctx.clip();
+    for (let i=0;i<CITIES.length;i++){ const [x,y,w,h] = this.rect(i); if (y > this.BOT || y + h < this.TOP) continue; this.cardDraw(i,x,y,w,h); }
+    ctx.restore();
+    const hg = ctx.createLinearGradient(0, this.TOP - 20, 0, this.TOP + 16); hg.addColorStop(0, "rgba(5,8,20,1)"); hg.addColorStop(1, "rgba(5,8,20,0)");
+    ctx.fillStyle = hg; ctx.fillRect(0, this.TOP - 20, W, 36);
+    text(txt("single_game"), 360, 130, 50, YELLOW, "center", "#000", 8);
+    text(txt("pick_sub"), 360, 180, 19, "#ccc");
+    text(txt("pick_sub2"), 360, 210, 17, "#999");
+    Scroller.bar(this.sc, 708, this.TOP + 10, this.BOT - 20);
     this.buttons.forEach(b=>b.render());
   },
-  key(k){ if (k==="Escape") go(Menu); else if (k==="Enter"||k===" ") this.pick(Math.min(singleCity, maxLevel)); }
+  key(k){ if (k==="Escape") go(Menu); else if (k==="Enter"||k===" ") this.pick(Math.min(singleCity, maxLevel));
+    else if (k==="ArrowUp") Scroller.wheel(this.sc, -140); else if (k==="ArrowDown") Scroller.wheel(this.sc, 140); }
 };
 
 /* =====================================================================
@@ -1861,10 +2372,13 @@ const Ranking = {
     const tab = (label, p, x) => new Button(x, 276, 230, 42, (bx,by,w,h)=>{ const on = this.period===p;
       ctx.fillStyle = on ? "rgba(255,230,0,.85)" : "rgba(255,255,255,.1)"; rrect(bx,by,w,h,12); ctx.fill(); text(label, bx+w/2, by+h/2+2, 18, on ? "#111" : "#ddd"); },
       ()=>{ if (this.period!==p){ this.period = p; this.load(); } }, 6);
-    const ctab = i => { const b = new Button(30 + i*168, 222, 156, 44, (bx,by,w,h)=>{ const on = this.city===i;
-        ctx.fillStyle = on ? "#fff" : "rgba(255,255,255,.08)"; rrect(bx,by,w,h,12); ctx.fill();
-        fitText(CITIES[i], bx+w/2, by+h/2+2, 16, w-12, on ? "#111" : "#ddd"); },
-      ()=>{ if (this.city!==i){ this.city = i; this.load(); } }, 6); b.cityTab = true; return b; };
+    // città della classifica: frecce ◀ ▶ (20 città)
+    const carrow = (dir, x) => { const b = new Button(x, 222, 64, 44, (bx,by,w,h)=>{ ctx.fillStyle = "rgba(255,255,255,.14)"; rrect(bx,by,w,h,12); ctx.fill();
+        text(dir < 0 ? "◀" : "▶", bx+w/2, by+h/2+2, 22, YELLOW); },
+      ()=>{ this.city = (this.city + dir + CITIES.length) % CITIES.length; this.load(); }, 6); b.cityTab = true; return b; };
+    const clabel = new Button(104, 222, 512, 44, (bx,by,w,h)=>{ ctx.fillStyle = "#fff"; rrect(bx,by,w,h,12); ctx.fill();
+        fitText(CITIES[this.city] + "   " + (this.city+1) + "/" + CITIES.length, bx+w/2, by+h/2+2, 20, w-20, "#111"); }, ()=>{ this.city = (this.city + 1) % CITIES.length; this.load(); }, 0);
+    clabel.cityTab = true;
     const mtab = (label, m, x) => new Button(x, 160, 300, 54, (bx,by,w,h)=>{ const on = this.mode===m;
       ctx.fillStyle = on ? YELLOW : "rgba(255,255,255,.1)"; rrect(bx,by,w,h,14); ctx.fill();
       if (!on){ ctx.lineWidth = 2; ctx.strokeStyle = "rgba(255,230,0,.5)"; ctx.stroke(); }
@@ -1873,7 +2387,7 @@ const Ranking = {
     this.buttons = [
       new Button(24, 24, 150, 64, (x,y,w,h)=>{ ctx.fillStyle="rgba(0,0,0,.6)"; rrect(x,y,w,h,16); ctx.fill();
         ctx.lineWidth=3; ctx.strokeStyle="rgba(255,230,0,.8)"; ctx.stroke(); text("◀ " + txt("menu"), x+w/2, y+h/2+2, 22, "#fff"); }, ()=>go(Menu), 8),
-      muteBtn(), mtab("ROADMAP", "road", 50), mtab(txt("per_city"), "single", 370), ...CITIES.map((c,i)=>ctab(i)), tab(txt("all_time"), "all", 125), tab(txt("week"), "week", 365),
+      muteBtn(), mtab("ROADMAP", "road", 50), mtab(txt("per_city"), "single", 370), carrow(-1, 30), clabel, carrow(1, 626), tab(txt("all_time"), "all", 125), tab(txt("week"), "week", 365),
       new Button(40, 1036, 300, 56, (x,y,w,h)=>{ ctx.fillStyle="rgba(255,255,255,.1)"; rrect(x,y,w,h,14); ctx.fill();
         fitText(Net.name ? "✎ " + Net.name : txt("choose_name"), x+w/2, y+h/2+2, 20, w-20, Net.name ? "#fff" : YELLOW); }, ()=>this.askName(), 6),
       new Button(380, 1036, 300, 56, (x,y,w,h)=>{ ctx.fillStyle="rgba(255,255,255,.1)"; rrect(x,y,w,h,14); ctx.fill();
@@ -2800,12 +3314,14 @@ cv.addEventListener("pointerdown", e=>{
 cv.addEventListener("pointerup", e=>{ const p = toLogical(e); if (scene.up) scene.up(p.x,p.y); });
 cv.addEventListener("pointermove", e=>{
   const p = toLogical(e);
+  if (scene.move && e.buttons) scene.move(p.x, p.y);   // trascinamento (liste che scorrono)
   pointer = {x:p.x, y:p.y, mouse: e.pointerType==="mouse"};
   const over = (scene.buttons||[]).some(b=>b.hit(p.x,p.y)) || (LangUI.on() && (LangUI.inBtn(p.x,p.y) || LangUI.optAt(p.x,p.y) >= 0));
   cv.style.cursor = over ? "pointer" : "default";
 });
 cv.addEventListener("pointerleave", ()=>{ pointer.x = pointer.y = -1; });
 cv.addEventListener("contextmenu", e=>e.preventDefault());
+cv.addEventListener("wheel", e=>{ if (scene.wheel){ e.preventDefault(); scene.wheel(e.deltaY); } }, { passive: false });
 addEventListener("keydown", e=>{
   if (e.repeat) return;
   if (document.activeElement && document.activeElement.tagName === "INPUT") return;

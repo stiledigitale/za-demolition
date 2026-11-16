@@ -1,4 +1,4 @@
-# ZA DEMOLITION — versione web (Ver. B.6.1)
+# ZA DEMOLITION — versione web (Ver. B.7.0)
 
 Gioco aziendale ZA srl in stile Timberman: si demolisce un palazzo piano per piano con l'escavatore.
 Nato in GDevelop, poi riscritto da zero come pagina web (un solo file `index.html`, canvas 2D, JavaScript senza librerie).
@@ -44,7 +44,8 @@ Ogni modifica caricata su GitHub (branch `main`) viene pubblicata da sola da Clo
 - **Modalità ROADMAP:** città in sequenza Riva del Garda → Trento → Bolzano → Verona (poi ricomincia con ★2…), **100 piani per città** (`LEVEL_EVERY` in `index.html`). Tra una città e l'altra: scena del trasferimento con camion Mercedes bianco e carrellone a 4 assi.
 - **Modalità PARTITA SINGOLA:** si sceglie una città già sbloccata nella Roadmap, palazzo infinito.
 - **Classifiche online:** una per la Roadmap e una per ogni città (`mode` = `road`, `s0`, `s1`, `s2`, `s3`), "di sempre" e "settimana"; a parità di piani vince il tempo più basso. Nome giocatore, codice di recupero progressi a 6 caratteri.
-- **Ambientazioni:** giorno / tramonto / notte / alba per città; cannoni nebulizzatori bianchi. Il palazzo da demolire è diroccato; i **fondali** (B.6.1) usano lo stesso stile (intonaco, cantonali, marcapiani, finestre con persiane) ma con palazzi curati e vivi: fioriere di gerani, tetti in coppi, tende dei negozi, glicine, vasi di limoni e oleandri, alberi in fiore, aiuole, siepi. Riva: lungolago; Trento: Castello, case affrescate e giardino; Bolzano: Duomo, case tirolesi con bovindo e banco della frutta; Verona: Arena e Liston con i bar. Tutto disegnato nel codice (`sceneKit` → `palazzo`, `window`, `flowerBox`, `pot`, `bloomTree`...), senza immagini.
+- **Ambientazioni:** giorno / tramonto / notte / alba per città; cannoni nebulizzatori bianchi. Il palazzo da demolire è diroccato; i **fondali** (B.6.1) usano lo stesso stile (intonaco, cantonali, marcapiani, finestre con persiane) ma con palazzi curati e vivi: fioriere di gerani, tetti in coppi, tende dei negozi, glicine, vasi di limoni e oleandri, alberi in fiore, aiuole, siepi. Riva: lungolago; Trento: Castello, case affrescate e giardino; Bolzano: Duomo, case tirolesi con bovindo e banco della frutta; Verona: Arena e Liston con i bar.
+- **Roadmap a 20 città** (B.7.0): Riva del Garda, Trento, Bolzano, Verona, Trieste (Municipio, Faro della Vittoria, Miramare, Barcolana), Venezia (palazzi gotici, campanile di San Marco, Palazzo Ducale, gondole), Padova (Santo, Palazzo della Ragione, Prato della Valle), Bergamo (Città Alta, Mura, Campanone, funicolare), Brescia (Pallata, Duomo Nuovo, Loggia, Mille Miglia), Torino (Mole, Gran Madre, Alpi, tram), Milano (Duomo e Madonnina, Bosco Verticale, grattacielo), Bologna (Due Torri, San Petronio, portici, San Luca), Genova (Lanterna, porto, case colorate), Firenze (Cupola, campanile di Giotto, Palazzo Vecchio, Ponte Vecchio), Napoli (Vesuvio, Maschio Angioino, panni stesi, pino, Vespa), Bari (San Nicola, Teatro Margherita, lungomare, orecchiette), Catanzaro (Ponte Bisantis, fichi d'india), Palermo (Cattedrale, San Giovanni degli Eremiti, palme, carretto), Cagliari (Bastione di Saint Remy, Torre dell'Elefante, fenicotteri, Sella del Diavolo), Roma (Colosseo, Vittoriano, San Pietro, pini, Vespa). Ogni città ha anche i colori del suo palazzo da demolire (`FACADES`). Roadmap e scelta della città si scorrono (dito, mouse, rotellina); in classifica la città si cambia con ◀ ▶. Record della partita singola `s0`..`s19`. Dopo Roma il giro ricomincia con ★2. Tutto disegnato nel codice (`sceneKit` → `palazzo`, `window`, `flowerBox`, `pot`, `bloomTree`...), senza immagini.
 - **Ostacoli e bonus:** balconi di varie misure, piani vuoti, travi in cemento (20 pinzate), bonus tempo / casco / stella x2.
 - **Escavatori** (stessa livrea ZA bianca): CAT 323, CAT 319M gommato, CAT 329, CAT 330, CAT 340, sbloccati con il record.
 - **Operatori:** con foto e nome, 10 in tutto (OPS = 0-7, 9, 10). Tolto solo Seba (indice 8); FRANZ e DJ ZANELLA restano.
@@ -61,7 +62,7 @@ Ogni modifica caricata su GitHub (branch `main`) viene pubblicata da sola da Clo
 
 ## Idee per i prossimi passi
 - Sfide / multiplayer.
-- Nuove città dalla lista COMING SOON (nel codice: `COMING`).
+- Nuove città dalla lista  (nel codice: `COMING`).
 
 ## Per riprendere con Claude su un altro account
 Collega il repository stiledigitale/za-demolition (o carica lo zip) e scrivi: *"Questo è il mio gioco ZA DEMOLITION (versione web). Leggi LEGGIMI.md e continuiamo da qui."*
