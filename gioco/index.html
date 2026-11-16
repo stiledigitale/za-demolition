@@ -35,7 +35,7 @@
    ZA DEMOLITION — versione web (porting dal progetto GDevelop r.00)
    Risoluzione logica 720x1280 (verticale), scalata alla finestra.
    ===================================================================== */
-const VERSION = "Ver. B.9.0 web";
+const VERSION = "Ver. B.9.1 web";
 const W = 720, H = 1280;
 const FONT = '"Arial Black","Segoe UI Black","Helvetica Neue",Impact,sans-serif';
 const YELLOW = "#FFE600";
@@ -387,11 +387,13 @@ const Iso = {
       v += hgt*Math.exp(-((x-cx)**2 + (y-cy)**2)/(2*r*r));
     return v;
   },
-  build(key, col, alpha){
+  // sc = scala del disegno: sui pulsanti le curve sono più piccole e fitte (sc 2.6)
+  build(key, col, alpha, sc){
+    sc = sc || 1;
     const c = document.createElement("canvas"); c.width = W*RS; c.height = H*RS; const g = c.getContext("2d"); g.scale(RS, RS);
-    const S = 7, nx = Math.ceil(W/S)+1, ny = Math.ceil(H/S)+1, F = new Float32Array(nx*ny);
-    for (let j=0;j<ny;j++) for (let i=0;i<nx;i++) F[j*nx+i] = this.field(i*S, j*S);
-    const STEP = 0.105; g.strokeStyle = col; g.lineWidth = 1.15; g.lineCap = "round"; g.beginPath();
+    const S = sc > 1 ? 4 : 7, nx = Math.ceil(W/S)+1, ny = Math.ceil(H/S)+1, F = new Float32Array(nx*ny);
+    for (let j=0;j<ny;j++) for (let i=0;i<nx;i++) F[j*nx+i] = this.field(i*S*sc % (W*2), j*S*sc % (H*2));
+    const STEP = sc > 1 ? 0.16 : 0.105; g.strokeStyle = col; g.lineWidth = sc > 1 ? 0.9 : 1.15; g.lineCap = "round"; g.beginPath();
     for (let j=0;j<ny-1;j++) for (let i=0;i<nx-1;i++){
       const a = F[j*nx+i], b = F[j*nx+i+1], cc = F[(j+1)*nx+i+1], d = F[(j+1)*nx+i];
       const lo = Math.ceil(Math.min(a,b,cc,d)/STEP), hi = Math.floor(Math.max(a,b,cc,d)/STEP);
@@ -403,13 +405,14 @@ const Iso = {
     g.stroke();
     // sfumatura: linee piene in basso a destra e nei rilievi, quasi invisibili in alto a sinistra
     g.globalCompositeOperation = "destination-in";
+    if (sc > 1){ g.fillStyle = `rgba(0,0,0,${alpha})`; g.fillRect(0, 0, W, H); return this.tex[key] = c; }   // sui pulsanti: intensità uniforme
     const m = g.createRadialGradient(W*0.78, H*0.86, 60, W*0.6, H*0.6, H*0.95);
     m.addColorStop(0, `rgba(0,0,0,${alpha})`); m.addColorStop(0.55, `rgba(0,0,0,${alpha*0.7})`); m.addColorStop(1, `rgba(0,0,0,${alpha*0.22})`);
     g.fillStyle = m; g.fillRect(0, 0, W, H);
     return this.tex[key] = c;
   },
-  get(dark){ const k = dark ? "d" : "y"; return this.tex[k] || this.build(k, dark ? "#111111" : YELLOW, dark ? 0.32 : 0.75); },
-  // tutto lo schermo (sfondi dei menu)
+  get(dark){ const k = dark ? "d" : "y"; return this.tex[k] || this.build(k, dark ? "#111111" : YELLOW, dark ? 0.3 : 0.6, 2.6); },
+  // tutto lo schermo (non usato: le isoipse stanno solo sui pulsanti)
   layer(a){ ctx.save(); ctx.globalAlpha = a; ctx.drawImage(this.get(false), 0, 0, W, H); ctx.restore(); },
   // solo dentro la forma già impostata come clip: stesse coordinate dello schermo, le linee proseguono da un elemento all'altro
   inClip(x, y, w, h, dark, a){
@@ -2049,7 +2052,7 @@ const Menu = {
   },
   update(dt){ this.t += dt; MenuBg.update(dt); this.buttons.forEach(b=>b.update(dt)); },
   render(){
-    MenuBg.render(); MenuBg.veil(1); Iso.layer(0.6);
+    MenuBg.render(); MenuBg.veil(1);
     const s = 1.0 + Math.sin(this.t*2.2)*0.03;
     ctx.save(); ctx.translate(360, 200); ctx.rotate(Math.sin(this.t*1.3)*0.02); ctx.scale(s*0.92,s*0.92);
     img("title",-181.5,-129.5,363,259); ctx.restore();
@@ -2098,7 +2101,7 @@ const Select = {
     ctx.restore();
   },
   render(){
-    MenuBg.render(); MenuBg.veil(1.15); Iso.layer(0.55);
+    MenuBg.render(); MenuBg.veil(1.15);
     img("select", 40, 120, 640, 51);
     // carosello: vicini più piccoli e sfumati ai lati
     const off = this.slide * 300;
@@ -2214,7 +2217,7 @@ const Roadmap = {
   wheel(dy){ Scroller.wheel(this.sc, dy); },
   update(dt){ this.t += dt; MenuBg.update(dt); Scroller.update(this.sc, dt); this.buttons.forEach(b=>b.update(dt)); },
   render(){
-    MenuBg.render(); ctx.fillStyle = "rgba(5,8,20,.84)"; ctx.fillRect(0,0,W,H); Iso.layer(0.55);
+    MenuBg.render(); ctx.fillStyle = "rgba(5,8,20,.84)"; ctx.fillRect(0,0,W,H);
     const reached = Math.min(maxLevel, CITIES.length-1);
     ctx.save(); ctx.beginPath(); ctx.rect(0, this.TOP - 40, W, this.BOT - this.TOP + 40); ctx.clip();
     ctx.lineWidth = 8; ctx.lineCap = "round";
@@ -2270,7 +2273,7 @@ const Splash = {
   go(){ initAudio(); go(afterSplash()); Music.startMenu(); },
   update(dt){ this.t += dt; MenuBg.update(dt); if (actx && actx.state === "running" && !this.hold && Net.name) this.go(); },  // hold: si sta scegliendo la lingua
   render(){
-    MenuBg.render(); MenuBg.veil(1); Iso.layer(0.6);
+    MenuBg.render(); MenuBg.veil(1);
     const s = 1.0 + Math.sin(this.t*2.2)*0.03;
     ctx.save(); ctx.translate(360, 420); ctx.scale(s*1.25,s*1.25); img("title",-181.5,-129.5,363,259); ctx.restore();
     ctx.fillStyle = "rgba(0,0,0,.7)"; ctx.fillRect(0, 760, W, 150); ctx.fillStyle = YELLOW; ctx.fillRect(0, 760, W, 5); ctx.fillRect(0, 905, W, 5);
@@ -2298,7 +2301,7 @@ const NameGate = {
   update(dt){ this.t += dt; MenuBg.update(dt); this.buttons.forEach(b=>b.update(dt));
     if (Net.name && scene === NameGate){ const b = document.getElementById("askBox"); if (b) b.style.display = "none"; go(Menu); } },
   render(){
-    MenuBg.render(); MenuBg.veil(1); Iso.layer(0.6);
+    MenuBg.render(); MenuBg.veil(1);
     ctx.save(); ctx.translate(360, 330); ctx.scale(1.05,1.05); img("title",-181.5,-129.5,363,259); ctx.restore();
     fitText(txt("welcome_site"), 360, 600, 40, 660, YELLOW, "center", "#000", 8);
     text(txt("before_start"), 360, 660, 24, "#fff", "center", "#000", 5);
@@ -2351,7 +2354,7 @@ const CityPick = {
   },
   update(dt){ this.t += dt; MenuBg.update(dt); Scroller.update(this.sc, dt); this.buttons.forEach(b=>b.update(dt)); },
   render(){
-    MenuBg.render(); ctx.fillStyle = "rgba(5,8,20,.84)"; ctx.fillRect(0,0,W,H); Iso.layer(0.55);
+    MenuBg.render(); ctx.fillStyle = "rgba(5,8,20,.84)"; ctx.fillRect(0,0,W,H);
     ctx.save(); ctx.beginPath(); ctx.rect(0, this.TOP, W, this.BOT - this.TOP); ctx.clip();
     for (let i=0;i<CITIES.length;i++){ const [x,y,w,h] = this.rect(i); if (y > this.BOT || y + h < this.TOP) continue; this.cardDraw(i,x,y,w,h); }
     ctx.restore();
@@ -2551,7 +2554,7 @@ const Ranking = {
   },
   update(dt){ this.t += dt; MenuBg.update(dt); this.buttons.forEach(b=>{ if (b.cityTab) b.visible = this.mode === "single"; b.update(dt); }); },
   render(){
-    MenuBg.render(); ctx.fillStyle = "rgba(5,8,20,.86)"; ctx.fillRect(0,0,W,H); Iso.layer(0.55);
+    MenuBg.render(); ctx.fillStyle = "rgba(5,8,20,.86)"; ctx.fillRect(0,0,W,H);
     drawTrophy(150, 108, 56, this.t); drawTrophy(570, 108, 56, this.t+1.5);
     fitText(txt("ranking"), 360, 110, 48, 330, YELLOW, "center", "#000", 8);
     if (this.mode === "road") text(txt("road_rank_sub", LEVEL_EVERY), 360, 244, 17, "#bbb");
@@ -2738,7 +2741,7 @@ const MedalsScreen = {
       muteBtn() ]; },
   update(dt){ this.t += dt; MenuBg.update(dt); this.buttons.forEach(b=>b.update(dt)); },
   render(){
-    MenuBg.render(); ctx.fillStyle = "rgba(5,8,20,.86)"; ctx.fillRect(0,0,W,H); Iso.layer(0.55);
+    MenuBg.render(); ctx.fillStyle = "rgba(5,8,20,.86)"; ctx.fillRect(0,0,W,H);
     text("🏅 " + txt("medals"), 360, 130, 50, YELLOW, "center", "#000", 8);
     text(txt("medals_sub", Medals.count(), MEDALS.length), 360, 180, 20, "#ccc");
     MEDALS.forEach(([id, icon], i)=>{
@@ -3625,7 +3628,7 @@ const Game = {
     }
 
     if (this.paused){
-      ctx.fillStyle = "rgba(0,0,0,.7)"; ctx.fillRect(0,0,W,H); Iso.layer(0.5);
+      ctx.fillStyle = "rgba(0,0,0,.7)"; ctx.fillRect(0,0,W,H);
       text(txt("pause"), 360, 440, 80, YELLOW, "center", "#000", 10);
       this.resumeBtn.render(); this.pRestartBtn.render(); this.pMenuBtn.render(); this.pMuteBtn.render();
     }
@@ -3636,7 +3639,6 @@ const Game = {
       ctx.fillStyle = "rgba(0,0,0,.45)"; ctx.fillRect(0,0,W,H);
       const py = 270 + (1-a)*60;
       ctx.fillStyle = "rgba(10,10,10,.93)"; rrect(60, py, 600, 840, 30); ctx.fill();
-      ctx.save(); rrect(60, py, 600, 840, 30); ctx.clip(); Iso.inClip(60, py, 600, 840, false, 0.5); ctx.restore();
       ctx.lineWidth = 6; ctx.strokeStyle = YELLOW; rrect(60, py, 600, 840, 30); ctx.stroke();
       const ttl = txt("over_" + this.reason), sub = txt("sub_" + this.reason);
       fitText(ttl, 360, py+70, this.reason==="crush"?64:50, 560, YELLOW, "center", "#000", 8);

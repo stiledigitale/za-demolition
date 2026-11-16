@@ -1,4 +1,4 @@
-# ZA DEMOLITION — versione web (Ver. B.9.0)
+# ZA DEMOLITION — versione web (Ver. B.9.1)
 
 Gioco aziendale ZA srl in stile Timberman: si demolisce un palazzo piano per piano con l'escavatore.
 Nato in GDevelop, poi riscritto da zero come pagina web (un solo file `index.html`, canvas 2D, JavaScript senza librerie).
@@ -45,7 +45,7 @@ Ogni modifica caricata su GitHub (branch `main`) viene pubblicata da sola da Clo
 - **Pausa** (B.8.1): pulsante giallo in alto a destra sempre visibile in partita (anche prima del VIA), oppure Esc/P. Dentro: RIPRENDI, RICOMINCIA, TORNA AL MENU, audio.
 - **Condividi il gioco** (B.8.2): pulsante giallo in fondo al menu. Crea un'immagine promozionale (logo, "Demolisci in 20 città italiane", cartoline di Venezia, Firenze e Roma, indirizzo del gioco) con un testo d'invito nella lingua del giocatore (`promoCard`, `shareGame`).
 - **Link cliccabile** (B.8.4): le immagini condivise non riportano più l'indirizzo; il link (cliccabile) è nel messaggio che le accompagna. Anteprima del link (`og.jpg` 1200×630 + meta Open Graph in `index.html`): su WhatsApp, Facebook, LinkedIn e Telegram il link mostra una scheda con immagine che apre il gioco.
-- **Isoipse** (B.9.0), come nella grafica di ZA srl: curve di livello gialle sottili e sfumate (oggetto `Iso`: terreno di colline calcolato una volta, marching squares, sfumatura radiale). Sugli sfondi di tutti i menu, sulle schede, sui pulsanti a banner (gialle sui neri, scure sui gialli), su pausa e fine partita. Non nelle schermate di gioco.
+- **Isoipse** (B.9.0), come nella grafica di ZA srl: curve di livello gialle sottili e sfumate (oggetto `Iso`: terreno di colline calcolato una volta, marching squares, sfumatura radiale). Solo sui pulsanti (B.9.1): pulsanti a banner (gialle sui neri, scure sui gialli) e schede del menu, in scala ridotta (curve piccole e fitte, `sc = 2.6`). Non sugli sfondi.
 - **Condividi** nel game over: crea un'immagine 1080×1350 (logo, piani, città, modalità, operatore, nome, indirizzo del gioco). Sul telefono apre la condivisione (WhatsApp, social...), sul computer scarica l'immagine e copia il testo.
 - Server: `za_submit_score` accetta `dAAAAMMGG`; limite di plausibilità 120 + 16 piani al secondo (per TNT e mattone d'oro).
 
