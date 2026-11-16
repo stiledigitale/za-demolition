@@ -23,7 +23,7 @@
    ZA DEMOLITION — versione web (porting dal progetto GDevelop r.00)
    Risoluzione logica 720x1280 (verticale), scalata alla finestra.
    ===================================================================== */
-const VERSION = "Ver. B.8.0 web";
+const VERSION = "Ver. B.8.1 web";
 const W = 720, H = 1280;
 const FONT = '"Arial Black","Segoe UI Black","Helvetica Neue",Impact,sans-serif';
 const YELLOW = "#FFE600";
@@ -248,6 +248,8 @@ const I18N = {
   mdd_daily:    ["50 piani nella sfida del giorno","50 floors in the daily challenge","50 Etagen in der Tages-Challenge","50 étages au défi du jour","50 pisos en el reto del día"],
   md_share:     ["AMBASCIATORE ZA","ZA AMBASSADOR","ZA-BOTSCHAFTER","AMBASSADEUR ZA","EMBAJADOR ZA"],
   mdd_share:    ["condividi un risultato","share a result","teile ein Ergebnis","partage un résultat","comparte un resultado"],
+  back_menu:    ["TORNA AL MENU","BACK TO MENU","ZURÜCK ZUM MENÜ","RETOUR AU MENU","VOLVER AL MENÚ"],
+  restart:      ["RICOMINCIA","RESTART","NEU STARTEN","RECOMMENCER","REINICIAR"],
   transfer:     ["TRASFERIMENTO DEL CANTIERE","MOVING THE CONSTRUCTION SITE","DIE BAUSTELLE ZIEHT UM","TRANSFERT DU CHANTIER","TRASLADO DE LA OBRA"],
   skip:         ["tocca per saltare","tap to skip","tippen zum Überspringen","touche pour passer","toca para saltar"],
 };
@@ -3058,14 +3060,17 @@ const Game = {
     this.shareBtn = new Button(368, 1004, 232, 74, (x,y,w,h)=>banner(x,y,w,h,txt("share")), ()=>shareResult(this.shareInfo()), 10);
     this.leftBtn  = new Button(40, 1150, 200, 100, (x,y,w,h)=>arrowBtn(x,y,w,h,-1), ()=>this.chop(0), 10);
     this.rightBtn = new Button(480, 1150, 200, 100, (x,y,w,h)=>arrowBtn(x,y,w,h,1), ()=>this.chop(1), 10);
-    this.pauseBtn = new Button(640, 128, 60, 60, (x,y,w,h)=>{ ctx.fillStyle="rgba(0,0,0,.6)"; rrect(x,y,w,h,14); ctx.fill();
-      ctx.fillStyle="#fff"; ctx.fillRect(x+19,y+16,8,28); ctx.fillRect(x+33,y+16,8,28); }, ()=>this.setPause(true), 8);
-    this.resumeBtn = new Button(160, 560, 400, 84, (x,y,w,h)=>banner(x,y,w,h,txt("resume")), ()=>this.setPause(false), 10);
-    this.pMenuBtn  = new Button(160, 664, 400, 74, (x,y,w,h)=>banner(x,y,w,h,txt("menu"),true), ()=>go(Menu), 10);
-    this.pMuteBtn  = new Button(280, 768, 160, 64, (x,y,w,h)=>{ ctx.fillStyle="rgba(255,255,255,.12)"; rrect(x,y,w,h,14); ctx.fill();
+    // pausa: sempre a portata di dito durante la partita
+    this.pauseBtn = new Button(628, 126, 72, 72, (x,y,w,h)=>{ ctx.fillStyle="rgba(0,0,0,.72)"; rrect(x,y,w,h,16); ctx.fill();
+      ctx.lineWidth = 3; ctx.strokeStyle = YELLOW; ctx.stroke();
+      ctx.fillStyle = YELLOW; rrect(x+21,y+18,11,36,3); ctx.fill(); rrect(x+40,y+18,11,36,3); ctx.fill(); }, ()=>this.setPause(true), 10);
+    this.resumeBtn = new Button(160, 520, 400, 84, (x,y,w,h)=>banner(x,y,w,h,txt("resume")), ()=>this.setPause(false), 10);
+    this.pRestartBtn = new Button(160, 620, 400, 74, (x,y,w,h)=>banner(x,y,w,h,txt("restart"),true), ()=>go(Game), 10);
+    this.pMenuBtn  = new Button(160, 710, 400, 74, (x,y,w,h)=>banner(x,y,w,h,txt("back_menu"),true), ()=>go(Menu), 10);
+    this.pMuteBtn  = new Button(280, 806, 160, 64, (x,y,w,h)=>{ ctx.fillStyle="rgba(255,255,255,.12)"; rrect(x,y,w,h,14); ctx.fill();
       text(muted?"🔇  OFF":"🔊  ON", x+w/2, y+h/2+2, 26, "#fff"); }, ()=>{ muted=!muted; store.set("muted",muted); }, 8);
     this.leftBtn.silent = this.rightBtn.silent = true;
-    this.buttons = [this.resumeBtn, this.pMenuBtn, this.pMuteBtn, this.startBtn, this.retryBtn, this.homeBtn, this.shareBtn, this.pauseBtn, this.leftBtn, this.rightBtn];
+    this.buttons = [this.resumeBtn, this.pRestartBtn, this.pMenuBtn, this.pMuteBtn, this.startBtn, this.retryBtn, this.homeBtn, this.shareBtn, this.pauseBtn, this.leftBtn, this.rightBtn];
   },
   emptyRow(r){ r.side = -1; r.item = null; r.hidden = false; r.dying = false; r.deco = null; r.beam = null; },
   // generatore dei piani: balconi, piani vuoti, raffiche sullo stesso lato, bonus
@@ -3099,8 +3104,8 @@ const Game = {
     let x = R() * pool.reduce((a,p)=>a+p[1], 0); for (const [k,w] of pool){ if ((x -= w) < 0) return k; } return "time"; },
   start(){ if (!this.started){ this.started = true; Music.startGame(); } },
   setPause(p){
-    if (this.over || !this.started) return;
-    this.paused = p; if (p) Music.stop(); else Music.startGame();
+    if (this.over || this.transit) return;
+    this.paused = p; if (p) Music.stop(); else if (this.started) Music.startGame();
   },
 
   chop(dir){
@@ -3255,8 +3260,8 @@ const Game = {
     const playing = this.started && !this.over;
     this.startBtn.visible = !this.started && !this.over;
     this.leftBtn.visible = this.rightBtn.visible = !this.over && !this.paused;
-    this.pauseBtn.visible = playing && !this.paused;
-    this.resumeBtn.visible = this.pMenuBtn.visible = this.pMuteBtn.visible = this.paused;
+    this.pauseBtn.visible = !this.over && !this.paused && !this.transit;
+    this.resumeBtn.visible = this.pRestartBtn.visible = this.pMenuBtn.visible = this.pMuteBtn.visible = this.paused;
     this.retryBtn.visible = this.homeBtn.visible = this.shareBtn.visible = this.over && this.overT > 0.6;
     if (this.paused) return;
     if (this.transit){
@@ -3520,8 +3525,8 @@ const Game = {
 
     if (this.paused){
       ctx.fillStyle = "rgba(0,0,0,.7)"; ctx.fillRect(0,0,W,H);
-      text(txt("pause"), 360, 470, 80, YELLOW, "center", "#000", 10);
-      this.resumeBtn.render(); this.pMenuBtn.render(); this.pMuteBtn.render();
+      text(txt("pause"), 360, 440, 80, YELLOW, "center", "#000", 10);
+      this.resumeBtn.render(); this.pRestartBtn.render(); this.pMenuBtn.render(); this.pMuteBtn.render();
     }
 
     if (this.over && this.overT > 0.35){
@@ -3555,7 +3560,7 @@ const Game = {
   },
 
   key(k){
-    if (k==="Escape" || k==="p" || k==="P"){ if (this.paused) this.setPause(false); else if (this.started && !this.over) this.setPause(true); else go(Menu); return; }
+    if (k==="Escape" || k==="p" || k==="P"){ if (this.paused) this.setPause(false); else if (!this.over) this.setPause(true); else go(Menu); return; }
     if (this.paused){ if (k==="Enter"||k===" ") this.setPause(false); return; }
     if (k==="ArrowLeft") this.chop(0);
     else if (k==="ArrowRight") this.chop(1);
