@@ -6,6 +6,18 @@
 <meta name="theme-color" content="#000000">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>ZA Demolition</title>
+<meta name="description" content="Il gioco di ZA srl: demolisci palazzi con l'escavatore in 20 città italiane. Sfida del giorno, classifica online e medaglie. Gratis nel browser.">
+<!-- anteprima quando si condivide il link: scheda con immagine che si tocca e apre il gioco -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://za-demolition.pages.dev/">
+<meta property="og:title" content="ZA DEMOLITION · Demolisci in 20 città italiane">
+<meta property="og:description" content="Il gioco di ZA srl: demolisci palazzi con l'escavatore. Sfida del giorno, classifica online e medaglie. Gioca gratis!">
+<meta property="og:image" content="https://za-demolition.pages.dev/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="it_IT">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://za-demolition.pages.dev/og.jpg">
 <style>
   html,body{margin:0;height:100%;background:#000;overflow:hidden;touch-action:none;
     user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
@@ -23,7 +35,7 @@
    ZA DEMOLITION — versione web (porting dal progetto GDevelop r.00)
    Risoluzione logica 720x1280 (verticale), scalata alla finestra.
    ===================================================================== */
-const VERSION = "Ver. B.8.3 web";
+const VERSION = "Ver. B.8.4 web";
 const W = 720, H = 1280;
 const FONT = '"Arial Black","Segoe UI Black","Helvetica Neue",Impact,sans-serif';
 const YELLOW = "#FFE600";
@@ -2722,9 +2734,8 @@ function shareCard(g, info){
     g.beginPath(); g.arc(CW/2 - 170, 950, 62, 0, Math.PI*2); g.clip(); g.drawImage(op, CW/2 - 232, 888, 124, 124); g.restore(); }
   if (ok(nm)){ const s = Math.min(1.2, 360/nm.naturalWidth); g.drawImage(nm, CW/2 - 80, 950 - nm.naturalHeight*s/2, nm.naturalWidth*s, nm.naturalHeight*s); }
   if (info.player) T(info.player, CW/2 + 100, 1020, 30, "#ccc");
-  g.fillStyle = YELLOW; rrectG(g, 190, 1110, 700, 150, 30); g.fill();
-  T(txt("share_play"), CW/2, 1158, 46, "#111");
-  T(SHARE_URL.replace("https://", ""), CW/2, 1220, 40, "#111");
+  g.fillStyle = YELLOW; rrectG(g, 240, 1120, 600, 130, 30); g.fill();
+  T(txt("share_play"), CW/2, 1187, 58, "#111");
 }
 function rrectG(g, x, y, w, h, r){ g.beginPath(); g.moveTo(x+r, y); g.arcTo(x+w, y, x+w, y+h, r); g.arcTo(x+w, y+h, x, y+h, r); g.arcTo(x, y+h, x, y, r); g.arcTo(x, y, x+w, y, r); g.closePath(); }
 // immagine promozionale del gioco (menu → CONDIVIDI IL GIOCO)
@@ -2747,19 +2758,19 @@ function promoCard(g){
     const sw = h * W / 560; g.drawImage(SCENES[ci](), -sw/2, -h/2, sw, h); g.restore();
     g.font = `900 30px ${FONT}`; g.textAlign = "center"; g.textBaseline = "middle"; g.fillStyle = "#111"; g.fillText(CITIES[ci], 0, h/2 + 26); g.restore(); });
   T(txt("promo_sub"), CW/2, 1000, 36, "#fff", "center", "#000", 8);
-  g.fillStyle = YELLOW; rrectG(g, 190, 1090, 700, 170, 30); g.fill(); g.lineWidth = 6; g.strokeStyle = "#111"; g.stroke();
-  T(txt("share_play"), CW/2, 1145, 52, "#111");
-  T(SHARE_URL.replace("https://", ""), CW/2, 1212, 42, "#111");
+  // il link viaggia nel messaggio (cliccabile), non nell'immagine
+  g.fillStyle = YELLOW; rrectG(g, 230, 1110, 620, 140, 30); g.fill(); g.lineWidth = 6; g.strokeStyle = "#111"; g.stroke();
+  T(txt("share_play"), CW/2, 1182, 62, "#111");
 }
 async function shareGame(){
   Medals.award("share");
   const c = document.createElement("canvas"); c.width = 1080; c.height = 1350; promoCard(c.getContext("2d"));
-  await shareCanvas(c, txt("share_game_text") + " " + SHARE_URL, "za-demolition-gioco.png");
+  await shareCanvas(c, txt("share_game_text") + "\n👉 " + SHARE_URL, "za-demolition-gioco.png");
 }
 async function shareResult(info){
   Medals.award("share");
   const c = document.createElement("canvas"); c.width = 1080; c.height = 1350; shareCard(c.getContext("2d"), info);
-  await shareCanvas(c, txt("share_text", info.score, info.city) + " " + SHARE_URL, "za-demolition.png");
+  await shareCanvas(c, txt("share_text", info.score, info.city) + "\n👉 " + SHARE_URL, "za-demolition.png");
 }
 // telefono: condivisione nativa (WhatsApp, social...) con l'immagine; computer: scarica l'immagine e copia il testo
 async function shareCanvas(c, text, fname){
