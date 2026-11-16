@@ -23,7 +23,7 @@
    ZA DEMOLITION — versione web (porting dal progetto GDevelop r.00)
    Risoluzione logica 720x1280 (verticale), scalata alla finestra.
    ===================================================================== */
-const VERSION = "Ver. B.7.0 web";
+const VERSION = "Ver. B.8.0 web";
 const W = 720, H = 1280;
 const FONT = '"Arial Black","Segoe UI Black","Helvetica Neue",Impact,sans-serif';
 const YELLOW = "#FFE600";
@@ -195,6 +195,59 @@ const I18N = {
   sending:      ["invio in classifica…","sending to the leaderboard…","sende an die Rangliste…","envoi au classement…","enviando a la clasificación…"],
   pos_rank:     ["🏆 POSIZIONE #{0} IN CLASSIFICA","🏆 RANK #{0} ON THE LEADERBOARD","🏆 PLATZ #{0} IN DER RANGLISTE","🏆 POSITION #{0} AU CLASSEMENT","🏆 POSICIÓN #{0} EN LA CLASIFICACIÓN"],
   rank_fail:    ["classifica non raggiungibile: lo invio dopo","leaderboard unreachable: sending later","Rangliste nicht erreichbar: wird später gesendet","classement inaccessible : envoi plus tard","clasificación no disponible: se enviará después"],
+  // --- B.8: bonus nuovi, eventi delle città, sfida del giorno, medaglie, condivisione ---
+  it_tnt:       ["TNT! BOOM!","TNT! BOOM!","TNT! BUMM!","TNT ! BOUM !","¡TNT! ¡BUM!"],
+  it_hammer:    ["MARTELLO TURBO!","TURBO HAMMER!","TURBO-HAMMER!","MARTEAU TURBO !","¡MARTILLO TURBO!"],
+  it_coffee:    ["CAFFÈ! TEMPO FERMO","COFFEE! TIME FROZEN","KAFFEE! ZEIT STEHT","CAFÉ ! TEMPS FIGÉ","¡CAFÉ! TIEMPO PARADO"],
+  it_gold:      ["MATTONE D'ORO +{0}","GOLD BRICK +{0}","GOLDZIEGEL +{0}","BRIQUE D'OR +{0}","¡LADRILLO DE ORO +{0}!"],
+  ev_bora:      ["🌬️ ARRIVA LA BORA!","🌬️ HERE COMES THE BORA!","🌬️ DIE BORA KOMMT!","🌬️ LA BORA ARRIVE !","🌬️ ¡LLEGA LA BORA!"],
+  ev_acqua:     ["🌊 ACQUA ALTA!","🌊 HIGH WATER!","🌊 HOCHWASSER!","🌊 ACQUA ALTA !","🌊 ¡ACQUA ALTA!"],
+  ev_nebbia:    ["🌫️ ARRIVA LA NEBBIA!","🌫️ FOG ROLLING IN!","🌫️ NEBEL ZIEHT AUF!","🌫️ LE BROUILLARD ARRIVE !","🌫️ ¡LLEGA LA NIEBLA!"],
+  ev_vesuvio:   ["🌋 IL VESUVIO BRONTOLA!","🌋 VESUVIUS RUMBLES!","🌋 DER VESUV GRUMMELT!","🌋 LE VÉSUVE GRONDE !","🌋 ¡EL VESUBIO RUGE!"],
+  ev_done:      ["SUPERATA! 💪","YOU MADE IT! 💪","GESCHAFFT! 💪","RÉUSSI ! 💪","¡SUPERADO! 💪"],
+  daily:        ["SFIDA DEL GIORNO","DAILY CHALLENGE","TAGES-CHALLENGE","DÉFI DU JOUR","RETO DEL DÍA"],
+  daily_sub:    ["oggi a {0} · stesso palazzo per tutti","today in {0} · same building for everyone","heute in {0} · gleiches Gebäude für alle","aujourd'hui à {0} · même immeuble pour tous","hoy en {0} · mismo edificio para todos"],
+  today:        ["OGGI","TODAY","HEUTE","AUJOURD'HUI","HOY"],
+  daily_short:  ["SFIDA","DAILY","CHALLENGE","DÉFI","RETO"],
+  floors_daily: ["PIANI DEMOLITI · SFIDA DEL GIORNO","FLOORS DEMOLISHED · DAILY","ABGERISSENE ETAGEN · CHALLENGE","ÉTAGES DÉMOLIS · DÉFI DU JOUR","PISOS DEMOLIDOS · RETO DEL DÍA"],
+  medals:       ["MEDAGLIE","MEDALS","MEDAILLEN","MÉDAILLES","MEDALLAS"],
+  medals_sub:   ["{0} su {1} conquistate","{0} of {1} earned","{0} von {1} erhalten","{0} sur {1} obtenues","{0} de {1} conseguidas"],
+  new_medal:    ["🏅 MEDAGLIA: {0}","🏅 MEDAL: {0}","🏅 MEDAILLE: {0}","🏅 MÉDAILLE : {0}","🏅 MEDALLA: {0}"],
+  share:        ["CONDIVIDI","SHARE","TEILEN","PARTAGER","COMPARTIR"],
+  share_text:   ["Ho demolito {0} piani a ZA DEMOLITION ({1})! Riesci a fare meglio?","I demolished {0} floors in ZA DEMOLITION ({1})! Can you beat me?","Ich habe in ZA DEMOLITION {0} Etagen abgerissen ({1})! Schaffst du mehr?","J'ai démoli {0} étages dans ZA DEMOLITION ({1}) ! Tu peux faire mieux ?","¡He demolido {0} pisos en ZA DEMOLITION ({1})! ¿Puedes superarme?"],
+  share_floors: ["PIANI DEMOLITI","FLOORS DEMOLISHED","ABGERISSENE ETAGEN","ÉTAGES DÉMOLIS","PISOS DEMOLIDOS"],
+  share_play:   ["GIOCA ANCHE TU","PLAY NOW","SPIEL MIT","JOUE AUSSI","JUEGA TÚ TAMBIÉN"],
+  share_saved:  ["immagine salvata","image saved","Bild gespeichert","image enregistrée","imagen guardada"],
+  md_m100:      ["PRIMO PALAZZO","FIRST BUILDING","ERSTES GEBÄUDE","PREMIER IMMEUBLE","PRIMER EDIFICIO"],
+  mdd_m100:     ["100 piani in una partita","100 floors in one game","100 Etagen in einem Spiel","100 étages en une partie","100 pisos en una partida"],
+  md_m300:      ["GRATTACIELO","SKYSCRAPER","WOLKENKRATZER","GRATTE-CIEL","RASCACIELOS"],
+  mdd_m300:     ["300 piani in una partita","300 floors in one game","300 Etagen in einem Spiel","300 étages en une partie","300 pisos en una partida"],
+  md_combo30:   ["MANI VELOCI","FAST HANDS","FLINKE HÄNDE","MAINS RAPIDES","MANOS RÁPIDAS"],
+  mdd_combo30:  ["combo x30","combo x30","Combo x30","combo x30","combo x30"],
+  md_beams3:    ["SPACCATRAVI","BEAM BREAKER","TRÄGERBRECHER","BRISE-POUTRES","ROMPEVIGAS"],
+  mdd_beams3:   ["3 travi in una partita","3 beams in one game","3 Träger in einem Spiel","3 poutres en une partie","3 vigas en una partida"],
+  md_tnt:       ["ARTIFICIERE","BLASTER","SPRENGMEISTER","ARTIFICIER","ARTIFICIERO"],
+  mdd_tnt:      ["fai esplodere la TNT","set off the TNT","zünde das TNT","fais exploser la TNT","haz explotar la TNT"],
+  md_gold:      ["CERCATORE D'ORO","GOLD DIGGER","GOLDSUCHER","CHERCHEUR D'OR","BUSCADOR DE ORO"],
+  mdd_gold:     ["trova il mattone d'oro","find the gold brick","finde den Goldziegel","trouve la brique d'or","encuentra el ladrillo de oro"],
+  md_helmet:    ["SICUREZZA!","SAFETY FIRST","SICHERHEIT!","SÉCURITÉ !","¡SEGURIDAD!"],
+  mdd_helmet:   ["salvato dal casco","saved by the helmet","vom Helm gerettet","sauvé par le casque","salvado por el casco"],
+  md_coffee:    ["PAUSA CAFFÈ","COFFEE BREAK","KAFFEEPAUSE","PAUSE CAFÉ","PAUSA DEL CAFÉ"],
+  mdd_coffee:   ["il caffè del capocantiere","the foreman's coffee","Kaffee vom Polier","le café du chef de chantier","el café del capataz"],
+  md_bora:      ["CONTRO LA BORA","BORA-PROOF","BORA-FEST","CONTRE LA BORA","CONTRA LA BORA"],
+  mdd_bora:     ["supera la Bora a Trieste","survive the Bora in Trieste","überstehe die Bora in Triest","survis à la Bora à Trieste","supera la Bora en Trieste"],
+  md_acqua:     ["STIVALI ALTI","HIGH BOOTS","HOHE STIEFEL","BOTTES HAUTES","BOTAS ALTAS"],
+  mdd_acqua:    ["supera l'acqua alta a Venezia","survive high water in Venice","überstehe das Hochwasser in Venedig","survis à l'acqua alta à Venise","supera el acqua alta en Venecia"],
+  md_nebbia:    ["OCCHIO DI FALCO","EAGLE EYE","ADLERAUGE","ŒIL DE LYNX","OJO DE HALCÓN"],
+  mdd_nebbia:   ["supera la nebbia a Milano","survive the fog in Milan","überstehe den Nebel in Mailand","survis au brouillard à Milan","supera la niebla en Milán"],
+  md_vesuvio:   ["NERVI SALDI","STEADY NERVES","STARKE NERVEN","NERFS D'ACIER","NERVIOS DE ACERO"],
+  mdd_vesuvio:  ["supera il Vesuvio a Napoli","survive Vesuvius in Naples","überstehe den Vesuv in Neapel","survis au Vésuve à Naples","supera el Vesubio en Nápoles"],
+  md_roma:      ["TUTTE LE STRADE…","ALL ROADS…","ALLE WEGE…","TOUS LES CHEMINS…","TODOS LOS CAMINOS…"],
+  mdd_roma:     ["arriva a Roma nella Roadmap","reach Rome on the Roadmap","erreiche Rom in der Roadmap","atteins Rome dans la Roadmap","llega a Roma en la Roadmap"],
+  md_daily:     ["SFIDANTE","CHALLENGER","HERAUSFORDERER","CHALLENGER","RETADOR"],
+  mdd_daily:    ["50 piani nella sfida del giorno","50 floors in the daily challenge","50 Etagen in der Tages-Challenge","50 étages au défi du jour","50 pisos en el reto del día"],
+  md_share:     ["AMBASCIATORE ZA","ZA AMBASSADOR","ZA-BOTSCHAFTER","AMBASSADEUR ZA","EMBAJADOR ZA"],
+  mdd_share:    ["condividi un risultato","share a result","teile ein Ergebnis","partage un résultat","comparte un resultado"],
   transfer:     ["TRASFERIMENTO DEL CANTIERE","MOVING THE CONSTRUCTION SITE","DIE BAUSTELLE ZIEHT UM","TRANSFERT DU CHANTIER","TRASLADO DE LA OBRA"],
   skip:         ["tocca per saltare","tap to skip","tippen zum Überspringen","touche pour passer","toca para saltar"],
 };
@@ -1878,9 +1931,11 @@ const Menu = {
   enter(){
     this.t = 0;
     this.buttons = [
-      new Button(110, 538, 500, 72, (x,y,w,h)=>banner(x,y,w,h,"ROADMAP"), ()=>{ gameMode="road"; store.set("mode",gameMode); go(Game); }, 12),
-      new Button(110, 622, 500, 72, (x,y,w,h)=>banner(x,y,w,h,txt("single_game"),true), ()=>go(CityPick), 12),
-      new Button(110, 712, 500, 100, (x,y,w,h)=>{
+      new Button(110, 488, 500, 66, (x,y,w,h)=>banner(x,y,w,h,"ROADMAP"), ()=>{ gameMode="road"; store.set("mode",gameMode); go(Game); }, 10),
+      new Button(110, 562, 500, 66, (x,y,w,h)=>banner(x,y,w,h,txt("single_game"),true), ()=>go(CityPick), 10),
+      new Button(110, 636, 500, 66, (x,y,w,h)=>{ banner(x,y,w,h,"📅 " + txt("daily"));
+        const dr = DailyRec.get(); if (dr > 0){ ctx.fillStyle = "#111"; rrect(x+w-74, y-12, 78, 30, 10); ctx.fill(); text("★ " + dr, x+w-35, y+3, 16, YELLOW); } }, ()=>startDaily(), 10),
+      new Button(110, 716, 500, 96, (x,y,w,h)=>{
         card(x,y,w,h);
         ctx.save(); ctx.beginPath(); ctx.arc(x+56, y+h/2, 38, 0, Math.PI*2); ctx.fillStyle=YELLOW; ctx.fill();
         ctx.beginPath(); ctx.arc(x+56, y+h/2, 33, 0, Math.PI*2); ctx.clip(); img("op"+OPS[operator], x+23, y+h/2-33, 66, 66); ctx.restore();
@@ -1889,27 +1944,32 @@ const Menu = {
         if (ok(nm)){ const s = Math.min(0.72, 240/nm.naturalWidth); img("name"+OPS[operator], x+112, y+44, nm.naturalWidth*s, nm.naturalHeight*s); }
         text(txt("change"), x+w-22, y+h/2+2, 20, YELLOW, "right");
       }, ()=>go(Select), 8),
-      new Button(110, 828, 243, 120, (x,y,w,h)=>{
+      new Button(110, 826, 243, 112, (x,y,w,h)=>{
         card(x,y,w,h);
-        ctx.save(); ctx.translate(x+w/2, y+64); ctx.scale(0.42,0.42); ctx.translate(-(IN_L - IDLE_W*EXCAVATORS[excavator].s/2) - 40, -GROUND_Y);
+        ctx.save(); ctx.translate(x+w/2, y+60); ctx.scale(0.42,0.42); ctx.translate(-(IN_L - IDLE_W*EXCAVATORS[excavator].s/2) - 40, -GROUND_Y);
         drawExcavator(excavator, "idle" + (Math.floor(this.t*30)%6), 0, 0, 1, GROUND_Y, this.t); ctx.restore();
-        text(txt("excavator"), x+w/2, y+84, 15, "#aaa"); text(EXCAVATORS[excavator].name, x+w/2, y+104, 20, YELLOW);
+        text(txt("excavator"), x+w/2, y+78, 15, "#aaa"); text(EXCAVATORS[excavator].name, x+w/2, y+98, 20, YELLOW);
       }, ()=>go(Garage), 8),
-      new Button(367, 828, 243, 120, (x,y,w,h)=>{
+      new Button(367, 826, 243, 112, (x,y,w,h)=>{
         card(x,y,w,h);
         // mini percorso
         ctx.lineWidth = 4; ctx.strokeStyle = YELLOW; ctx.beginPath();
         for (let i=0;i<5;i++){ const px = x+40+i*40, py = y+44 + Math.sin(i*1.3)*14; i? ctx.lineTo(px,py) : ctx.moveTo(px,py); } ctx.stroke();
         for (let i=0;i<5;i++){ const px = x+40+i*40, py = y+44 + Math.sin(i*1.3)*14; blob(px, py, 7, i <= Math.min(4,maxLevel) ? YELLOW : "#555"); }
-        text("ROADMAP", x+w/2, y+84, 15, "#aaa"); fitText(cityName(Math.min(maxLevel, CITIES.length-1)), x+w/2, y+104, 20, w-24, YELLOW);
+        text("ROADMAP", x+w/2, y+78, 15, "#aaa"); fitText(cityName(Math.min(maxLevel, CITIES.length-1)), x+w/2, y+98, 20, w-24, YELLOW);
       }, ()=>go(Roadmap), 8),
-      new Button(110, 964, 500, 90, (x,y,w,h)=>{
+      new Button(110, 952, 243, 90, (x,y,w,h)=>{
         card(x,y,w,h);
-        drawTrophy(x+50, y+h/2+2, 56, this.t);
-        fitText(txt("ranking"), x+96, y+36, 30, w-150, "#fff", "left");
-        fitText(txt(Net.enabled() ? "rank_online" : "rank_offline"), x+96, y+66, 16, w-150, YELLOW, "left");
-        text("▶", x+w-30, y+h/2+2, 26, YELLOW);
+        drawTrophy(x+42, y+h/2+2, 50, this.t);
+        fitText(txt("ranking"), x+78, y+36, 24, w-92, "#fff", "left");
+        fitText(Net.enabled() ? "online" : "offline", x+78, y+64, 15, w-92, YELLOW, "left");
       }, ()=>go(Ranking), 8),
+      new Button(367, 952, 243, 90, (x,y,w,h)=>{
+        card(x,y,w,h);
+        medalBadge(x+42, y+h/2-4, 26, "🏅", Medals.count() > 0);
+        fitText(txt("medals"), x+78, y+36, 24, w-92, "#fff", "left");
+        fitText(Medals.count() + " / " + MEDALS.length, x+78, y+64, 17, w-92, YELLOW, "left");
+      }, ()=>go(MedalsScreen), 8),
       muteBtn(),
     ];
     const size=60, gap=22, total=SOCIAL.length*size+(SOCIAL.length-1)*gap;
@@ -1919,15 +1979,15 @@ const Menu = {
   render(){
     MenuBg.render(); MenuBg.veil(1);
     const s = 1.0 + Math.sin(this.t*2.2)*0.03;
-    ctx.save(); ctx.translate(360, 215); ctx.rotate(Math.sin(this.t*1.3)*0.02); ctx.scale(s,s);
+    ctx.save(); ctx.translate(360, 200); ctx.rotate(Math.sin(this.t*1.3)*0.02); ctx.scale(s*0.92,s*0.92);
     img("title",-181.5,-129.5,363,259); ctx.restore();
-    card(110, 385, 500, 132);
-    drawTrophy(185, 450, 84, this.t);
-    fitText(txt("record_road"), 252, 420, 18, 200, "#aaa", "left");
-    text(String(rec.road || 0), 252, 461, 50, "#fff", "left", "#000", 6);
+    card(110, 362, 500, 112);
+    drawTrophy(180, 418, 72, this.t);
+    fitText(txt("record_road"), 240, 392, 17, 200, "#aaa", "left");
+    text(String(rec.road || 0), 240, 428, 44, "#fff", "left", "#000", 6);
     const bc = store.get("bestCombo", 0);
-    fitText(best > 0 ? txt("combo_max") + " " + bc : txt("first_record"), 252, 498, 17, 340, YELLOW, "left");
-    if (best > 0){ text(txt("single_short"), 570, 420, 18, "#aaa", "right"); text(String(recSingle()), 570, 461, 40, "#fff", "right", "#000", 6); }
+    fitText(best > 0 ? txt("combo_max") + " " + bc : txt("first_record"), 240, 460, 16, 340, YELLOW, "left");
+    if (best > 0){ text(txt("single_short"), 580, 392, 17, "#aaa", "right"); text(String(recSingle()), 580, 428, 36, "#fff", "right", "#000", 6); }
     this.buttons.forEach(b=>b.render());
     text(txt("follow"), 360, 1138, 17, YELLOW, "center");
     for (const so of this.social){
@@ -2263,7 +2323,7 @@ const Net = {
     } catch(e){ if (e.name === "AbortError" || e instanceof TypeError) this.online = false; throw e; }
     finally { clearTimeout(tm); }
   },
-  progress(){ return { best, bestCombo: store.get("bestCombo", 0), maxLevel, operator, excavator, rec }; },
+  progress(){ return { best, bestCombo: store.get("bestCombo", 0), maxLevel, operator, excavator, rec, medals: Medals.got }; },
   async ensure(){
     if (!this.enabled()) throw new Error("offline");
     if (this.id) return;
@@ -2276,6 +2336,7 @@ const Net = {
     if ((p.best|0) > best){ best = p.best|0; store.set("best", best); }
     if ((p.bestCombo|0) > store.get("bestCombo",0)) store.set("bestCombo", p.bestCombo|0);
     if ((p.maxLevel|0) > maxLevel){ maxLevel = p.maxLevel|0; store.set("maxLevel", maxLevel); }
+    if (p.medals) Medals.merge(p.medals);
     if (p.rec && typeof p.rec === "object"){ for (const k in p.rec) if ((p.rec[k]|0) > (rec[k]||0)) rec[k] = p.rec[k]|0; store.set("rec", rec); }
   },
   async start(){
@@ -2379,15 +2440,15 @@ const Ranking = {
     const clabel = new Button(104, 222, 512, 44, (bx,by,w,h)=>{ ctx.fillStyle = "#fff"; rrect(bx,by,w,h,12); ctx.fill();
         fitText(CITIES[this.city] + "   " + (this.city+1) + "/" + CITIES.length, bx+w/2, by+h/2+2, 20, w-20, "#111"); }, ()=>{ this.city = (this.city + 1) % CITIES.length; this.load(); }, 0);
     clabel.cityTab = true;
-    const mtab = (label, m, x) => new Button(x, 160, 300, 54, (bx,by,w,h)=>{ const on = this.mode===m;
+    const mtab = (label, m, x, w) => new Button(x, 160, w || 300, 54, (bx,by,w,h)=>{ const on = this.mode===m;
       ctx.fillStyle = on ? YELLOW : "rgba(255,255,255,.1)"; rrect(bx,by,w,h,14); ctx.fill();
       if (!on){ ctx.lineWidth = 2; ctx.strokeStyle = "rgba(255,230,0,.5)"; ctx.stroke(); }
-      text(label, bx+w/2, by+h/2+2, 24, on ? "#111" : "#fff"); },
+      fitText(label, bx+w/2, by+h/2+2, 24, w-16, on ? "#111" : "#fff"); },
       ()=>{ if (this.mode!==m){ this.mode = m; this.load(); } }, 6);
     this.buttons = [
       new Button(24, 24, 150, 64, (x,y,w,h)=>{ ctx.fillStyle="rgba(0,0,0,.6)"; rrect(x,y,w,h,16); ctx.fill();
         ctx.lineWidth=3; ctx.strokeStyle="rgba(255,230,0,.8)"; ctx.stroke(); text("◀ " + txt("menu"), x+w/2, y+h/2+2, 22, "#fff"); }, ()=>go(Menu), 8),
-      muteBtn(), mtab("ROADMAP", "road", 50), mtab(txt("per_city"), "single", 370), carrow(-1, 30), clabel, carrow(1, 626), tab(txt("all_time"), "all", 125), tab(txt("week"), "week", 365),
+      muteBtn(), mtab("ROADMAP", "road", 30, 214), mtab(txt("per_city"), "single", 253, 214), mtab(txt("today"), "daily", 476, 214), carrow(-1, 30), clabel, carrow(1, 626), tab(txt("all_time"), "all", 125), tab(txt("week"), "week", 365),
       new Button(40, 1036, 300, 56, (x,y,w,h)=>{ ctx.fillStyle="rgba(255,255,255,.1)"; rrect(x,y,w,h,14); ctx.fill();
         fitText(Net.name ? "✎ " + Net.name : txt("choose_name"), x+w/2, y+h/2+2, 20, w-20, Net.name ? "#fff" : YELLOW); }, ()=>this.askName(), 6),
       new Button(380, 1036, 300, 56, (x,y,w,h)=>{ ctx.fillStyle="rgba(255,255,255,.1)"; rrect(x,y,w,h,14); ctx.fill();
@@ -2396,8 +2457,8 @@ const Ranking = {
       new Button(110, 1120, 500, 86, (x,y,w,h)=>banner(x,y,w,h,txt("play")), ()=>this.play(), 14),
     ];
   },
-  boardKey(){ return this.mode === "single" ? "s" + this.city : "road"; },
-  play(){ if (this.mode === "single"){ if (this.city <= maxLevel){ singleCity = this.city; gameMode = "single"; store.set("scity", singleCity); store.set("mode", gameMode); go(Game); } else go(CityPick); } else { gameMode = "road"; store.set("mode",gameMode); go(Game); } },
+  boardKey(){ return this.mode === "single" ? "s" + this.city : (this.mode === "daily" ? "d" + dailyKey() : "road"); },
+  play(){ if (this.mode === "daily"){ startDaily(); return; } if (this.mode === "single"){ if (this.city <= maxLevel){ singleCity = this.city; gameMode = "single"; store.set("scity", singleCity); store.set("mode", gameMode); go(Game); } else go(CityPick); } else { gameMode = "road"; store.set("mode",gameMode); go(Game); } },
   async load(){
     this.rows = null; this.err = "";
     if (!Net.enabled()){ this.err = "err_offline"; return; }
@@ -2422,6 +2483,7 @@ const Ranking = {
     drawTrophy(150, 108, 56, this.t); drawTrophy(570, 108, 56, this.t+1.5);
     fitText(txt("ranking"), 360, 110, 48, 330, YELLOW, "center", "#000", 8);
     if (this.mode === "road") text(txt("road_rank_sub", LEVEL_EVERY), 360, 244, 17, "#bbb");
+    if (this.mode === "daily") fitText("📅 " + txt("daily_sub", CITIES[dailyCity()]), 360, 244, 18, 660, YELLOW);
     // intestazione colonne
     text("#", 52, 338, 15, "#888"); text(txt("player"), 150, 338, 15, "#888", "left");
     fitText(txt("floors"), 560, 338, 15, 90, "#888"); fitText(txt("time"), 652, 338, 15, 80, "#888");
@@ -2546,11 +2608,135 @@ const Music = {
     o.connect(fl); fl.connect(g); g.connect(this.out()); o.start(t); o.stop(t+dur+0.02); }
 };
 
+/* ---------- SFIDA DEL GIORNO: stessa città e stesso palazzo per tutti ---------- */
+function dailyKey(){ const d = new Date(); return d.getUTCFullYear() + String(d.getUTCMonth()+1).padStart(2,"0") + String(d.getUTCDate()).padStart(2,"0"); }
+function dailyCity(){ return Math.floor(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), new Date().getUTCDate()) / 86400000) % CITIES.length; }
+function seededRand(str){ let h = 1779033703; for (const ch of str) { h = Math.imul(h ^ ch.charCodeAt(0), 3432918353); h = (h << 13) | (h >>> 19); }
+  let a = h >>> 0; return ()=>{ a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+// record della sfida: solo quello di oggi (non si accumula nei progressi salvati)
+const DailyRec = { get(){ const d = store.get("dailyRec", null); return d && d.key === dailyKey() ? d.best|0 : 0; },
+  set(v){ store.set("dailyRec", { key: dailyKey(), best: v|0 }); } };
+function startDaily(){ gameMode = "daily"; go(Game); }
+
+/* ---------- MEDAGLIE ---------- */
+const MEDALS = [
+  ["m100","🏢"],["m300","🏙️"],["combo30","🔥"],["beams3","🧱"],["tnt","🧨"],["gold","🥇"],["helmet","⛑️"],["coffee","☕"],
+  ["bora","🌬️"],["acqua","🌊"],["nebbia","🌫️"],["vesuvio","🌋"],["roma","🏛️"],["daily","📅"],["share","📣"],
+];
+const Medals = {
+  got: store.get("medals", {}) || {},
+  has(id){ return !!this.got[id]; },
+  count(){ return MEDALS.filter(([id])=>this.got[id]).length; },
+  award(id){
+    if (this.got[id] || !MEDALS.some(m=>m[0]===id)) return;
+    this.got[id] = Date.now(); store.set("medals", this.got);
+    this.toast = { id, t: 3.2 };
+    [784, 988, 1175, 1568].forEach((f,i)=>setTimeout(()=>tone(f, 0.12, 0.1, "triangle"), i*90));
+    try{ Net.saveProgress(); }catch(e){}
+  },
+  merge(m){ if (!m || typeof m !== "object") return; let ch = false; for (const k in m) if (!this.got[k] && MEDALS.some(x=>x[0]===k)){ this.got[k] = m[k]; ch = true; } if (ch) store.set("medals", this.got); },
+  update(dt){ if (this.toast){ this.toast.t -= dt; if (this.toast.t <= 0) this.toast = null; } },
+  // avviso in alto quando arriva una medaglia (in qualunque schermata)
+  render(){ if (!this.toast) return; const t = this.toast.t, a = Math.min(1, t*3, (3.2-t)*5), icon = MEDALS.find(m=>m[0]===this.toast.id)[1];
+    // durante la partita a metà schermo (non copre punteggio e barra), altrove in basso
+    const oy = (scene === Game && !Game.over) ? 330 : 900;
+    ctx.save(); ctx.globalAlpha = a; ctx.translate(0, oy + (1-a)*-40);
+    ctx.fillStyle = "rgba(10,10,10,.92)"; rrect(90, 250, 540, 92, 22); ctx.fill(); ctx.lineWidth = 4; ctx.strokeStyle = YELLOW; ctx.stroke();
+    medalBadge(152, 296, 34, icon, true);
+    fitText(txt("new_medal", "").replace(/:\s*$/, ""), 200, 278, 18, 410, YELLOW, "left");
+    fitText(txt("md_" + this.toast.id), 200, 312, 30, 410, "#fff", "left", "#000", 5);
+    ctx.restore(); }
+};
+function medalBadge(x, y, r, icon, on){
+  ctx.save();
+  if (on){ ctx.fillStyle = "#c62828"; ctx.beginPath(); ctx.moveTo(x-r*0.6, y-r*0.2); ctx.lineTo(x-r*0.95, y+r*1.25); ctx.lineTo(x-r*0.45, y+r*1.0); ctx.lineTo(x-r*0.15, y+r*1.35); ctx.lineTo(x, y); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = "#1f4e9a"; ctx.beginPath(); ctx.moveTo(x+r*0.6, y-r*0.2); ctx.lineTo(x+r*0.95, y+r*1.25); ctx.lineTo(x+r*0.45, y+r*1.0); ctx.lineTo(x+r*0.15, y+r*1.35); ctx.lineTo(x, y); ctx.closePath(); ctx.fill(); }
+  const g = ctx.createRadialGradient(x-r*0.3, y-r*0.3, r*0.2, x, y, r);
+  if (on){ g.addColorStop(0, "#fff3b0"); g.addColorStop(0.6, "#f6c32b"); g.addColorStop(1, "#b8860b"); } else { g.addColorStop(0, "#555"); g.addColorStop(1, "#2b2b2b"); }
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2); ctx.fill();
+  ctx.lineWidth = Math.max(2, r*0.1); ctx.strokeStyle = on ? "#8a6508" : "#444"; ctx.stroke();
+  ctx.globalAlpha = on ? 1 : 0.35; ctx.font = Math.round(r*1.05) + "px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(icon, x, y + r*0.06);
+  ctx.restore();
+}
+const MedalsScreen = {
+  enter(){ this.t = 0;
+    this.buttons = [
+      new Button(24, 24, 150, 64, (x,y,w,h)=>{ ctx.fillStyle="rgba(0,0,0,.6)"; rrect(x,y,w,h,16); ctx.fill();
+        ctx.lineWidth=3; ctx.strokeStyle="rgba(255,230,0,.8)"; ctx.stroke(); text("◀ " + txt("menu"), x+w/2, y+h/2+2, 22, "#fff"); }, ()=>go(Menu), 8),
+      muteBtn() ]; },
+  update(dt){ this.t += dt; MenuBg.update(dt); this.buttons.forEach(b=>b.update(dt)); },
+  render(){
+    MenuBg.render(); ctx.fillStyle = "rgba(5,8,20,.86)"; ctx.fillRect(0,0,W,H);
+    text("🏅 " + txt("medals"), 360, 130, 50, YELLOW, "center", "#000", 8);
+    text(txt("medals_sub", Medals.count(), MEDALS.length), 360, 180, 20, "#ccc");
+    MEDALS.forEach(([id, icon], i)=>{
+      const c = i % 3, r = Math.floor(i / 3), x = 24 + c*228, y = 220 + r*196, w = 216, h = 182, on = Medals.has(id);
+      ctx.fillStyle = on ? "rgba(255,230,0,.1)" : "rgba(255,255,255,.05)"; rrect(x, y, w, h, 18); ctx.fill();
+      ctx.lineWidth = 3; ctx.strokeStyle = on ? "rgba(255,230,0,.8)" : "rgba(255,255,255,.15)"; ctx.stroke();
+      medalBadge(x + w/2, y + 56, 36, icon, on);
+      fitText(txt("md_" + id), x + w/2, y + 128, 19, w - 16, on ? "#fff" : "#888");
+      fitText(txt("mdd_" + id), x + w/2, y + 156, 14, w - 16, on ? YELLOW : "#666");
+    });
+    this.buttons.forEach(b=>b.render());
+  },
+  key(k){ if (k==="Escape"||k==="Enter"||k===" ") go(Menu); }
+};
+
+/* ---------- EVENTI DELLE CITTÀ ---------- */
+const CITY_EVENTS = { 4: "bora", 5: "acqua", 10: "nebbia", 14: "vesuvio" };   // Trieste, Venezia, Milano, Napoli
+
+/* ---------- CONDIVISIONE DEL RISULTATO (immagine 1080x1350) ---------- */
+const SHARE_URL = "https://za-demolition.pages.dev";
+function shareCard(g, info){
+  const CW = 1080, CH = 1350, T = (s, x, y, size, col, align, stroke, sw)=>{ g.font = `900 ${size}px ${FONT}`; g.textAlign = align || "center"; g.textBaseline = "middle";
+    let w = g.measureText(s).width; if (w > CW - 80){ size = Math.floor(size*(CW-80)/w); g.font = `900 ${size}px ${FONT}`; }
+    if (stroke){ g.lineJoin = "round"; g.lineWidth = sw || size*0.16; g.strokeStyle = stroke; g.strokeText(s, x, y); } g.fillStyle = col; g.fillText(s, x, y); };
+  const th = THEMES[info.level % THEMES.length], sky = g.createLinearGradient(0, 0, 0, CH); sky.addColorStop(0, th.sky[0]); sky.addColorStop(1, th.sky[1]);
+  g.fillStyle = sky; g.fillRect(0, 0, CW, CH);
+  g.drawImage(SCENES[info.level % SCENES.length](), -90, CH - 900, 1260, 980);
+  g.fillStyle = "rgba(0,0,0,.25)"; g.fillRect(0, 0, CW, CH);
+  const stripes = y => { g.fillStyle = YELLOW; g.fillRect(0, y, CW, 34); g.fillStyle = "#111"; for (let x=-40; x<CW+40; x+=68){ g.beginPath(); g.moveTo(x, y+34); g.lineTo(x+34, y); g.lineTo(x+68, y); g.lineTo(x+34, y+34); g.fill(); } };
+  stripes(0); stripes(CH-34);
+  if (ok(IMG.title)) g.drawImage(IMG.title, CW/2 - 290, 60, 580, 414);
+  g.fillStyle = "rgba(10,10,10,.82)"; rrectG(g, 120, 500, 840, 560, 40); g.fill(); g.lineWidth = 8; g.strokeStyle = YELLOW; g.stroke();
+  T(txt("share_floors"), CW/2, 570, 44, "#ddd");
+  T(String(info.score), CW/2, 700, 210, YELLOW, "center", "#000", 18);
+  T(info.city + "  ·  " + info.mode, CW/2, 830, 44, "#fff");
+  const op = IMG["op" + info.op], nm = IMG["name" + info.op];
+  if (ok(op)){ g.save(); g.beginPath(); g.arc(CW/2 - 170, 950, 70, 0, Math.PI*2); g.fillStyle = YELLOW; g.fill();
+    g.beginPath(); g.arc(CW/2 - 170, 950, 62, 0, Math.PI*2); g.clip(); g.drawImage(op, CW/2 - 232, 888, 124, 124); g.restore(); }
+  if (ok(nm)){ const s = Math.min(1.2, 360/nm.naturalWidth); g.drawImage(nm, CW/2 - 80, 950 - nm.naturalHeight*s/2, nm.naturalWidth*s, nm.naturalHeight*s); }
+  if (info.player) T(info.player, CW/2 + 100, 1020, 30, "#ccc");
+  g.fillStyle = YELLOW; rrectG(g, 190, 1110, 700, 150, 30); g.fill();
+  T(txt("share_play"), CW/2, 1158, 46, "#111");
+  T(SHARE_URL.replace("https://", ""), CW/2, 1220, 40, "#111");
+}
+function rrectG(g, x, y, w, h, r){ g.beginPath(); g.moveTo(x+r, y); g.arcTo(x+w, y, x+w, y+h, r); g.arcTo(x+w, y+h, x, y+h, r); g.arcTo(x, y+h, x, y, r); g.arcTo(x, y, x+w, y, r); g.closePath(); }
+async function shareResult(info){
+  Medals.award("share");
+  const c = document.createElement("canvas"); c.width = 1080; c.height = 1350; shareCard(c.getContext("2d"), info);
+  const text = txt("share_text", info.score, info.city) + " " + SHARE_URL;
+  let blob = null; try{ blob = await new Promise(res => c.toBlob(res, "image/png")); }catch(e){}
+  try{
+    if (blob && navigator.canShare){ const file = new File([blob], "za-demolition.png", { type: "image/png" });
+      if (navigator.canShare({ files: [file] })){ await navigator.share({ files: [file], text }); return; } }
+    if (navigator.share){ await navigator.share({ text, url: SHARE_URL }); return; }
+  }catch(e){ if (e && e.name === "AbortError") return; }
+  // computer: si scarica l'immagine e si copia il testo
+  try{ if (blob){ const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "za-demolition.png"; document.body.appendChild(a); a.click(); a.remove(); } }catch(e){}
+  try{ await navigator.clipboard.writeText(text); }catch(e){}
+  floatText(txt("share_saved"), 360, 820, 26, YELLOW, 1.4);
+}
+
 /* ---------- BONUS ---------- */
 const ITEMS = {
   time:   { icon:"⏱️", label:"+TEMPO!",      col:"#3ddc4a" },
   helmet: { icon:"⛑️", label:"CASCO!",       col:"#ff3b30" },
   star:   { icon:"⭐", label:"PUNTI x2!",    col:YELLOW },
+  coffee: { icon:"☕", col:"#bcaaa4" },     // la barra del tempo si ferma per 8 s
+  hammer: { icon:"🔨", col:"#ff9800" },     // martello turbo: 2 piani a colpo per 5 s
+  tnt:    { icon:"🧨", col:"#ff5722" },     // fa saltare 5 piani da sola
+  gold:   { icon:"",   col:"#ffd54f" },     // mattone d'oro: +50
 };
 function drawItem(type, x, y, t){
   const it = ITEMS[type], bob = Math.sin(t*4)*4;
@@ -2558,7 +2744,12 @@ function drawItem(type, x, y, t){
   ctx.globalAlpha = 0.35 + 0.25*Math.sin(t*6); blob(0,0,40,it.col); ctx.globalAlpha = 1;
   ctx.fillStyle = "#111"; ctx.beginPath(); ctx.arc(0,0,30,0,Math.PI*2); ctx.fill();
   ctx.lineWidth = 5; ctx.strokeStyle = it.col; ctx.stroke();
-  ctx.font = "34px sans-serif"; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText(it.icon, 0, 2);
+  if (type === "gold"){ // lingotto-mattone d'oro con luccichio
+    ctx.fillStyle = "#b8860b"; ctx.beginPath(); ctx.moveTo(-20,10); ctx.lineTo(20,10); ctx.lineTo(14,-8); ctx.lineTo(-14,-8); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = "#ffd54f"; ctx.beginPath(); ctx.moveTo(-16,6); ctx.lineTo(16,6); ctx.lineTo(11,-6); ctx.lineTo(-11,-6); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = "rgba(255,255,255,.7)"; ctx.fillRect(-9,-4,10,2);
+    const sp = (t*3) % 1; ctx.globalAlpha = 1 - sp; text("✦", 14, -16 - sp*6, 16, "#fff"); ctx.globalAlpha = 1;
+  } else { ctx.font = "34px sans-serif"; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText(it.icon, 0, 2); }
   ctx.restore();
 }
 
@@ -2848,7 +3039,10 @@ const Game = {
     this.overT = 0; this.newRecord = false; this.cloudX = -153; this.scorePop = 0;
     this.combo = 0; this.bestCombo = 0; this.lastChop = -9; this.t = 0;
     this.mode = gameMode; if (this.mode === "single" && singleCity > maxLevel) singleCity = 0;
-    const lv0 = this.mode === "single" ? singleCity : 0;
+    // sfida del giorno: città del giorno e palazzo generato sempre uguale per tutti
+    this.rand = this.mode === "daily" ? seededRand("za-" + dailyKey()) : Math.random;
+    this.coffee = 0; this.turbo = 0; this.tnt = null; this.ev = null; this.evNext = 14 + Math.random()*10; this.beamsBroken = 0;
+    const lv0 = this.mode === "single" ? singleCity : (this.mode === "daily" ? dailyCity() : 0);
     this.level = lv0; this.prevLevel = lv0; this.levelBanner = 0; this.floorsDown = 0; this.transit = null; this.themeMix = 0; this.prevTheme = lv0 % THEMES.length;
     this.shield = false; this.x2 = 0; this.flash = 0; this.slide = 1; this.slideFrom = 0;
     this.chunks = []; floats.length = 0; mist.length = 0;
@@ -2860,7 +3054,8 @@ const Game = {
     }
     this.startBtn = new Button(130, 720, 460, 66, (x,y,w,h)=>banner(x,y,w,h,txt("go")), ()=>this.start(), 20);
     this.retryBtn = new Button(160, 900, 400, 84, (x,y,w,h)=>banner(x,y,w,h,txt("retry")), ()=>go(Game), 10);
-    this.homeBtn  = new Button(160, 1004, 400, 74, (x,y,w,h)=>banner(x,y,w,h,txt("menu"),true), ()=>go(Menu), 10);
+    this.homeBtn  = new Button(120, 1004, 232, 74, (x,y,w,h)=>banner(x,y,w,h,txt("menu"),true), ()=>go(Menu), 10);
+    this.shareBtn = new Button(368, 1004, 232, 74, (x,y,w,h)=>banner(x,y,w,h,txt("share")), ()=>shareResult(this.shareInfo()), 10);
     this.leftBtn  = new Button(40, 1150, 200, 100, (x,y,w,h)=>arrowBtn(x,y,w,h,-1), ()=>this.chop(0), 10);
     this.rightBtn = new Button(480, 1150, 200, 100, (x,y,w,h)=>arrowBtn(x,y,w,h,1), ()=>this.chop(1), 10);
     this.pauseBtn = new Button(640, 128, 60, 60, (x,y,w,h)=>{ ctx.fillStyle="rgba(0,0,0,.6)"; rrect(x,y,w,h,14); ctx.fill();
@@ -2870,7 +3065,7 @@ const Game = {
     this.pMuteBtn  = new Button(280, 768, 160, 64, (x,y,w,h)=>{ ctx.fillStyle="rgba(255,255,255,.12)"; rrect(x,y,w,h,14); ctx.fill();
       text(muted?"🔇  OFF":"🔊  ON", x+w/2, y+h/2+2, 26, "#fff"); }, ()=>{ muted=!muted; store.set("muted",muted); }, 8);
     this.leftBtn.silent = this.rightBtn.silent = true;
-    this.buttons = [this.resumeBtn, this.pMenuBtn, this.pMuteBtn, this.startBtn, this.retryBtn, this.homeBtn, this.pauseBtn, this.leftBtn, this.rightBtn];
+    this.buttons = [this.resumeBtn, this.pMenuBtn, this.pMuteBtn, this.startBtn, this.retryBtn, this.homeBtn, this.shareBtn, this.pauseBtn, this.leftBtn, this.rightBtn];
   },
   emptyRow(r){ r.side = -1; r.item = null; r.hidden = false; r.dying = false; r.deco = null; r.beam = null; },
   // generatore dei piani: balconi, piani vuoti, raffiche sullo stesso lato, bonus
@@ -2879,24 +3074,29 @@ const Game = {
     this.sinceBeam = (this.sinceBeam || 0) + 1;
     if (below && below.beam) return; // respiro: sopra la trave un piano libero
     // ogni tanto una trave in cemento armato: va presa a picconate 10 volte
-    if (this.score >= 12 && this.sinceBeam >= 12 && Math.random() < 0.12 && !(below && below.beam)){
+    const R = this.rand || Math.random;
+    if (this.score >= 12 && this.sinceBeam >= 12 && R() < 0.12 && !(below && below.beam)){
       r.beam = makeBeam(); this.sinceBeam = 0; return;
     }
     const prevSide = below ? below.side : -1;
     const diff = Math.min(1, this.score / 150);
     const emptyChance = prevSide === -1 ? 0.18 : 0.38 - diff*0.18;
-    if (Math.random() < emptyChance){
-      if (this.score > 4 && Math.random() < 0.16){
-        r.item = Math.random() < 0.45 ? "time" : (Math.random() < 0.5 ? "helmet" : "star");
-        r.itemSide = Math.random() < 0.5 ? 0 : 1;
+    if (R() < emptyChance){
+      if (this.score > 4 && R() < 0.17){
+        r.item = this.pickItem();
+        r.itemSide = R() < 0.5 ? 0 : 1;
       }
       return;
     }
     // raffica: con la difficoltà aumenta la probabilità di ripetere lo stesso lato
-    if (prevSide !== -1 && Math.random() < 0.35 + diff*0.25) r.side = prevSide;
-    else r.side = Math.random() < 0.5 ? 0 : 1;
+    if (prevSide !== -1 && R() < 0.35 + diff*0.25) r.side = prevSide;
+    else r.side = R() < 0.5 ? 0 : 1;
     newBalcony(r);
   },
+  // bonus: i classici più spesso, TNT e mattone d'oro rari
+  pickItem(){ const R = this.rand || Math.random, pool = [["time",30],["helmet",17],["star",16],["coffee",12],["hammer",12],["tnt",8]];
+    if (this.score >= 30) pool.push(["gold",5]);
+    let x = R() * pool.reduce((a,p)=>a+p[1], 0); for (const [k,w] of pool){ if ((x -= w) < 0) return k; } return "time"; },
   start(){ if (!this.started){ this.started = true; Music.startGame(); } },
   setPause(p){
     if (this.over || !this.started) return;
@@ -2910,44 +3110,57 @@ const Game = {
     if (dir !== this.side){ this.slideFrom = this.playerX(); this.slide = 0; }
     this.side = dir;
     this.anim = "demo"; this.frame = 0; this.animT = 0;
-    // trave dura davanti all'escavatore: si colpisce senza scendere
+    if (this.tnt) return;   // la TNT sta facendo il suo lavoro
+    // trave dura davanti all'escavatore: si colpisce senza scendere (col martello turbo vale doppio)
     const bRow = this.beamRow();
-    if (bRow){
-      const bm = bRow.beam;
-      bm.hp--; bm.hitT = 0.25; this.timerStarted = true;
-      this.energy = Math.min(1, this.energy + 0.022);
-      this.camShake = Math.max(this.camShake, 0.07);
-      const hx = dir===0 ? BUILD_X - 10 : BUILD_X + BUILD_W + 10;
-      burst(hx, bRow.y + BEAM_DY + 35, dir===0 ? 210 : 330, 120, 10, true);
-      for (let i=0;i<8;i++){ const a=Math.random()*Math.PI*2, f=200+Math.random()*300, life=0.25+Math.random()*0.2;
-        parts.push({x:hx, y:bRow.y+BEAM_DY+35, vx:Math.cos(a)*f, vy:Math.sin(a)*f, life, max:life, rot:0, vr:0, s0:5, s1:2, col:[255,220,90]}); }
-      sfx.clank();
-      if (bm.hp > 0){ floatText(String(bm.hp), hx + (dir===0?-40:40), bRow.y + BEAM_DY + 10, 30, "#fff", 0.4); return; }
-      // trave distrutta!
-      const pts = (this.x2 > 0 ? 2 : 1) * 10;
-      this.score += pts;
-      floatText(txt("beam_down", pts), 360, 0, 44, YELLOW, 1.3);
-      this.energy = Math.min(1, this.energy + 0.3);
-      this.flash = 0.35; this.camShake = 0.3;
-      for (let k=0;k<5;k++) burst(BUILD_X + 20 + k*60, bRow.y + BEAM_DY + 35, 270, 200, 14, true);
-      dust(360, bRow.y + BEAM_DY + 40, 10);
-      sfx.beamBreak();
-      bRow.beam = null; bRow.hidden = true;
-      this.beamsBroken = (this.beamsBroken||0) + 1;
-      this.lv(); return; // la trave sparisce; il prossimo colpo riprende normale
-    }
+    if (bRow){ this.hitBeam(bRow, dir, this.turbo > 0 ? 2 : 1); return; }
     // combo
     const now = this.t;
     this.combo = (now - this.lastChop < 0.4) ? this.combo + 1 : 1;
     this.lastChop = now; this.bestCombo = Math.max(this.bestCombo, this.combo);
-    const pts = this.x2 > 0 ? 2 : 1;
-    this.score += pts; this.scorePop = 1;
     if (this.combo > 0 && this.combo % 10 === 0){
       const words = txt("combo_words");
       floatText(words[Math.min(words.length-1, this.combo/10-1)] + "  x" + this.combo, 360, 330, 46, YELLOW, 1.1);
       tone(880, 0.08, 0.1, "square");
     }
-    floatText("+" + pts, dir===0 ? 270 : 450, 960, 34, pts>1 ? YELLOW : "#fff", 0.6);
+    if (this.combo >= 30) Medals.award("combo30");
+    this.advance(dir, false, false);
+    // martello turbo: un piano in più a ogni colpo, senza rischi
+    if (this.turbo > 0 && !this.over && !this.transit){ const b2 = this.beamRow(); if (b2) this.hitBeam(b2, dir, 2); else this.advance(dir, true, true); }
+  },
+  hitBeam(bRow, dir, dmg){
+    const bm = bRow.beam;
+    bm.hp = Math.max(0, bm.hp - dmg); bm.hitT = 0.25; this.timerStarted = true;
+    this.energy = Math.min(1, this.energy + 0.022);
+    this.camShake = Math.max(this.camShake, 0.07);
+    const hx = dir===0 ? BUILD_X - 10 : BUILD_X + BUILD_W + 10;
+    burst(hx, bRow.y + BEAM_DY + 35, dir===0 ? 210 : 330, 120, 10, true);
+    for (let i=0;i<8;i++){ const a=Math.random()*Math.PI*2, f=200+Math.random()*300, life=0.25+Math.random()*0.2;
+      parts.push({x:hx, y:bRow.y+BEAM_DY+35, vx:Math.cos(a)*f, vy:Math.sin(a)*f, life, max:life, rot:0, vr:0, s0:5, s1:2, col:[255,220,90]}); }
+    sfx.clank();
+    if (bm.hp > 0){ floatText(String(bm.hp), hx + (dir===0?-40:40), bRow.y + BEAM_DY + 10, 30, "#fff", 0.4); return; }
+    this.breakBeam(bRow);
+  },
+  breakBeam(bRow){
+    const pts = (this.x2 > 0 ? 2 : 1) * 10;
+    this.score += pts;
+    floatText(txt("beam_down", pts), 360, 0, 44, YELLOW, 1.3);
+    this.energy = Math.min(1, this.energy + 0.3);
+    this.flash = 0.35; this.camShake = 0.3;
+    for (let k=0;k<5;k++) burst(BUILD_X + 20 + k*60, bRow.y + BEAM_DY + 35, 270, 200, 14, true);
+    dust(360, bRow.y + BEAM_DY + 40, 10);
+    sfx.beamBreak();
+    bRow.beam = null; bRow.hidden = true;
+    this.beamsBroken = (this.beamsBroken||0) + 1;
+    if (this.beamsBroken >= 3) Medals.award("beams3");
+    this.lv(); this.scoreMedals();
+  },
+  scoreMedals(){ if (this.score >= 100) Medals.award("m100"); if (this.score >= 300) Medals.award("m300"); },
+  // il palazzo scende di un piano. safe = colpo "gratis" (martello turbo, TNT): i balconi si rompono e non schiacciano
+  advance(dir, safe, quiet){
+    const pts = this.x2 > 0 ? 2 : 1;
+    this.score += pts; this.scorePop = 1;
+    if (!quiet) floatText("+" + pts, dir===0 ? 270 : 450, 960, 34, pts>1 ? YELLOW : "#fff", 0.6);
     // tempo: ogni colpo ricarica un po' la barra
     this.energy = Math.min(1, this.energy + 0.062);
     this.timerStarted = true;
@@ -2965,7 +3178,7 @@ const Game = {
     for (const r of this.rows){
       if (r.y > H){ r.y -= 8*FLOOR_H; this.genRow(r, top); }
     }
-    this.lv();
+    this.lv(); this.scoreMedals();
     // cosa arriva all'altezza dell'escavatore
     for (const r of this.rows){
       if (r.y < ROW_MIN || r.y > ROW_MAX) continue;
@@ -2975,8 +3188,8 @@ const Game = {
         r.item = null;
       }
       if (r.side === -1 || r.hidden) continue;
-      if (r.side === this.side){
-        if (this.shield){ this.shield = false; r.dying = true; this.flash = 0.4; floatText(txt("saved_helmet"), 360, 420, 40, "#ff6b5e", 1.1); }
+      if (r.side === this.side && !safe){
+        if (this.shield){ this.shield = false; r.dying = true; this.flash = 0.4; floatText(txt("saved_helmet"), 360, 420, 40, "#ff6b5e", 1.1); Medals.award("helmet"); }
         else this.die("crush");
       } else r.dying = true;
     }
@@ -2986,7 +3199,15 @@ const Game = {
     if (type === "time") this.energy = 1;
     if (type === "helmet") this.shield = true;
     if (type === "star") this.x2 = 6;
-    floatText(txt("it_" + type), 360, 400, 48, it.col, 1.1);
+    if (type === "coffee"){ this.coffee = 8; Medals.award("coffee"); }
+    if (type === "hammer") this.turbo = 5;
+    if (type === "tnt"){ this.tnt = { n: 5, t: 0.25 }; this.flash = 0.25; Medals.award("tnt"); }
+    if (type === "gold"){ const g = (this.x2 > 0 ? 2 : 1) * 50; this.score += g; this.scorePop = 1; Medals.award("gold");
+      floatText(txt("it_gold", g), 360, 400, 48, it.col, 1.4);
+      for (let i=0;i<24;i++){ const a=Math.random()*Math.PI*2, f=200+Math.random()*400, life=0.5+Math.random()*0.4;
+        parts.push({x:this.side===0?170:550, y:1000, vx:Math.cos(a)*f, vy:Math.sin(a)*f-200, life, max:life, rot:0, vr:0, s0:7, s1:2, col:[255,213,79]}); }
+      this.lv(); this.scoreMedals(); }
+    else floatText(txt("it_" + type), 360, 400, 48, it.col, 1.1);
     [660,880,1320].forEach((f,i)=>setTimeout(()=>tone(f,0.09,0.12,"square"), i*60));
     burst(this.side===0?120:600, 960, 270, 360, 26, false);
   },
@@ -3001,21 +3222,26 @@ const Game = {
   },
   playerX(){ return this.side===0 ? 0 : 1; },
   lv(){
-    if (this.mode === "single") return;
+    if (this.mode !== "road") return;
     const lv = Math.floor(this.score / LEVEL_EVERY);
     if (lv > this.level){ this.transit = { t: 0, from: this.level, to: lv }; this.prevTheme = this.level % THEMES.length; this.prevLevel = this.level; this.level = lv;
       if (lv > maxLevel){ maxLevel = lv; store.set("maxLevel", maxLevel); Net.saveProgress(); }
+      if (lv >= CITIES.length - 1) Medals.award("roma");
       this.energy = Math.max(this.energy, 0.85); sfx.record(); }
   },
-  recKey(){ return this.mode === "single" ? "s" + this.level : "road"; },
+  recKey(){ return this.mode === "single" ? "s" + this.level : (this.mode === "daily" ? "d" + dailyKey() : "road"); },
+  recGet(){ return this.mode === "daily" ? DailyRec.get() : (rec[this.recKey()] || 0); },
+  shareInfo(){ return { score: this.score, level: this.level, city: cityName(this.level), op: OPS[operator], player: Net.name,
+    mode: this.mode === "road" ? "ROADMAP" : txt(this.mode === "daily" ? "daily" : "single_game") }; },
   beamRow(){ return this.rows.find(r => r.beam && r.y >= ROW_MIN && r.y <= ROW_MAX); },
 
   die(reason){
     if (this.over) return;
     this.over = true; this.reason = reason; this.overT = 0; this.pending = reason; Music.stop();
     if (this.score > best){ best = this.score; store.set("best", best); }
-    const rk = this.recKey(); this.newRecord = this.score > 0 && this.score > (rec[rk] || 0);
-    if (this.newRecord){ rec[rk] = this.score; store.set("rec", rec); }
+    const rk = this.recKey(); this.newRecord = this.score > 0 && this.score > this.recGet();
+    if (this.newRecord){ if (this.mode === "daily") DailyRec.set(this.score); else { rec[rk] = this.score; store.set("rec", rec); } }
+    if (this.mode === "daily" && this.score >= 50) Medals.award("daily");
     const bc = store.get("bestCombo", 0); if (this.bestCombo > bc) store.set("bestCombo", this.bestCombo);
     this.rank = null; this.rankState = Net.enabled() && this.score > 0 ? "sending" : "";
     if (this.rankState) Net.submit({ mode: this.recKey(), floors: this.score, time_ms: Math.round(this.playTime*1000), operator: OPS[operator], excavator,
@@ -3031,7 +3257,7 @@ const Game = {
     this.leftBtn.visible = this.rightBtn.visible = !this.over && !this.paused;
     this.pauseBtn.visible = playing && !this.paused;
     this.resumeBtn.visible = this.pMenuBtn.visible = this.pMuteBtn.visible = this.paused;
-    this.retryBtn.visible = this.homeBtn.visible = this.over && this.overT > 0.6;
+    this.retryBtn.visible = this.homeBtn.visible = this.shareBtn.visible = this.over && this.overT > 0.6;
     if (this.paused) return;
     if (this.transit){
       this.transit.t += dt; this.t += dt; Music.bpm = 140;
@@ -3048,6 +3274,14 @@ const Game = {
     this.themeMix = Math.min(1, this.themeMix + dt*0.8);
     this.flash = Math.max(0, this.flash - dt);
     this.x2 = Math.max(0, this.x2 - dt);
+    this.coffee = Math.max(0, this.coffee - dt); this.turbo = Math.max(0, this.turbo - dt);
+    // TNT: 5 piani saltano uno dopo l'altro
+    if (this.tnt && !this.over){ this.tnt.t -= dt;
+      if (this.tnt.t <= 0){ this.tnt.t = 0.11; this.tnt.n--;
+        const b = this.beamRow(); if (b) this.breakBeam(b); else this.advance(this.side, true, true);
+        for (let k=0;k<3;k++) burst(BUILD_X + 30 + Math.random()*210, 900 + Math.random()*120, 270, 360, 18, true);
+        this.camShake = 0.25; sfx.smash(); if (this.tnt && this.tnt.n <= 0) this.tnt = null; } }
+    this.updateEvent(dt);
     for (const r of this.rows) if (r.beam && r.beam.hitT > 0) r.beam.hitT = Math.max(0, r.beam.hitT - dt);
     this.slide = Math.min(1, this.slide + dt/PLAYER_SLIDE);
     if (this.t - this.lastChop > 0.6) this.combo = 0;
@@ -3073,7 +3307,7 @@ const Game = {
       this.playTime += dt;
       if (this.timerStarted){
         const drain = Math.min(0.36, 0.10 + this.score*0.0020);
-        this.energy -= drain*dt;
+        if (this.coffee <= 0) this.energy -= drain*dt;   // col caffè la barra resta ferma
         if (this.energy <= 0){ this.energy = 0; this.die(this.beamRow() ? "beam" : "time"); }
       }
     }
@@ -3089,6 +3323,40 @@ const Game = {
       if (c.life<=0 || c.y>H+100) this.chunks.splice(i,1); }
     for (let i=floats.length-1;i>=0;i--){ const f=floats[i]; f.life-=dt; f.y-=60*dt; if (f.life<=0) floats.splice(i,1); }
     updateParts(dt); updateMist(dt);
+  },
+
+  // eventi delle città (Bora, acqua alta, nebbia, Vesuvio): brevi, con avviso
+  updateEvent(dt){
+    if (!this.started || this.over || !this.timerStarted){ return; }
+    const type = CITY_EVENTS[this.level % CITIES.length];
+    if (!type){ this.ev = null; return; }
+    if (!this.ev){ this.evNext -= dt;
+      if (this.evNext <= 0){ this.ev = { type, t: 0, dur: type === "nebbia" ? 6 : 5.5 };
+        floatText(txt("ev_" + type), 360, 330, 44, "#bfe6ff", 1.8); [330, 262, 196].forEach((f,i)=>setTimeout(()=>tone(f, 0.18, 0.12, "sawtooth"), i*120)); }
+      return; }
+    const e = this.ev; e.t += dt;
+    if (e.type === "vesuvio"){ e.rumble = (e.rumble||0) - dt; if (e.rumble <= 0){ e.rumble = 0.55 + Math.random()*0.4; this.camShake = Math.max(this.camShake, 0.2*this.evK()); tone(55, 0.35, 0.2, "sawtooth"); } }
+    if (e.type === "bora" && Math.random() < dt*6) for (const c of CANNONS) spawnMist(c, 2, 0.6);
+    if (e.t >= e.dur){ this.ev = null; this.evNext = 18 + Math.random()*14; Medals.award(type); floatText(txt("ev_done"), 360, 330, 40, "#3ddc4a", 1.1); }
+  },
+  evK(){ const e = this.ev; return e ? Math.max(0, Math.min(1, e.t/0.7, (e.dur - e.t)/0.7)) : 0; },
+  renderEvent(stage){
+    const e = this.ev; if (!e) return; const k = this.evK(), t = this.t;
+    if (stage === "back"){
+      if (e.type === "nebbia"){ // la nebbia nasconde i piani in arrivo
+        const g = ctx.createLinearGradient(0, 0, 0, 960); g.addColorStop(0, `rgba(214,220,226,${0.97*k})`); g.addColorStop(0.7, `rgba(214,220,226,${0.92*k})`); g.addColorStop(1, "rgba(214,220,226,0)");
+        ctx.fillStyle = g; ctx.fillRect(-30, -30, W+60, 990);
+        ctx.globalAlpha = 0.35*k; for (let i=0;i<7;i++){ const x = ((t*28*(i%2?1:-1) + i*170) % (W+300) + W+300) % (W+300) - 150; blob(x, 260 + i*95, 120, "#eef2f5"); } ctx.globalAlpha = 1; }
+      return; }
+    if (e.type === "bora"){ ctx.strokeStyle = `rgba(255,255,255,${0.55*k})`; ctx.lineWidth = 3;
+      for (let i=0;i<22;i++){ const y = (i*97 + 40) % 1080, x = ((t*1400 + i*263) % (W+400)) - 200, L = 80 + (i%4)*40;
+        ctx.beginPath(); ctx.moveTo(x, y); ctx.quadraticCurveTo(x+L/2, y-6, x+L, y); ctx.stroke(); } }
+    if (e.type === "acqua"){ const top = GROUND_Y - 80*k;
+      const g = ctx.createLinearGradient(0, top, 0, GROUND_Y); g.addColorStop(0, "rgba(70,150,190,.78)"); g.addColorStop(1, "rgba(30,90,130,.9)");
+      ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(-30, GROUND_Y+4); for (let x=-30; x<=W+30; x+=20) ctx.lineTo(x, top + Math.sin(x*0.03 + t*3)*5); ctx.lineTo(W+30, GROUND_Y+4); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = `rgba(255,255,255,${0.5*k})`; for (let i=0;i<14;i++){ const x = (i*61 + t*40) % W; ctx.fillRect(x, top + 12 + (i%4)*14, 18, 2); } }
+    if (e.type === "vesuvio"){ ctx.fillStyle = `rgba(255,120,40,${0.12*k})`; ctx.fillRect(-30,-30,W+60,H+60);
+      ctx.fillStyle = `rgba(70,70,70,${0.6*k})`; for (let i=0;i<70;i++){ const x = (i*97.3 + Math.sin(i)*50 + t*20) % W, y = (i*53 + t*(60 + (i%5)*20)) % 1100; ctx.fillRect(x, y, 3, 3); } }
   },
 
   drawSky(th, alpha){
@@ -3136,9 +3404,12 @@ const Game = {
       if (r.item) drawItem(r.item, r.itemSide===0 ? 170 : 530, by + 20, this.t + r.y*0.01);
       if (r.beam){ drawBeam(r.beam, by + BEAM_DY, this.t); continue; }
       if (r.side === -1 || r.hidden) continue;
-      drawBalconyRow(r, by, FACADES[this.level % FACADES.length].trim);
+      const sway = this.ev && this.ev.type === "bora" ? Math.sin(this.t*7 + r.y*0.013)*14*this.evK() : 0;
+      if (sway){ ctx.save(); ctx.translate(sway, 0); drawBalconyRow(r, by, FACADES[this.level % FACADES.length].trim); ctx.restore(); }
+      else drawBalconyRow(r, by, FACADES[this.level % FACADES.length].trim);
     }
     if (th.night && mix > 0.5){ ctx.globalAlpha = 0.18; ctx.fillStyle = "#0a0f3c"; ctx.fillRect(-30,-30,W+60,1142); ctx.globalAlpha = 1; }
+    this.renderEvent("back");
 
     // pezzi di facciata
     for (const c of this.chunks){ if (!c.img) continue;
@@ -3155,6 +3426,7 @@ const Game = {
 
     drawParts();
     drawMist();
+    this.renderEvent("front");
 
     // terreno
     ctx.fillStyle = "#111"; ctx.fillRect(-30, GROUND_Y, W+60, H-GROUND_Y+30);
@@ -3176,25 +3448,27 @@ const Game = {
     ctx.lineWidth = 4; ctx.strokeStyle = YELLOW; ctx.stroke();
     if (frac > 0){
       const low = frac < 0.25 && this.started;
-      ctx.fillStyle = frac > 0.5 ? "#3ddc4a" : frac > 0.25 ? "#ffcc00" : (Math.floor(this.t*8)%2 ? "#ff3b30" : "#ff7a70");
+      ctx.fillStyle = this.coffee > 0 ? "#8fd3ff" : frac > 0.5 ? "#3ddc4a" : frac > 0.25 ? "#ffcc00" : (Math.floor(this.t*8)%2 ? "#ff3b30" : "#ff7a70");
       rrect(164, 74, 392*frac, 28, 7); ctx.fill();
       if (low){ ctx.globalAlpha=0.25*(1+Math.sin(this.t*20)); ctx.fillStyle="#ff0000"; ctx.fillRect(0,0,W,H); ctx.globalAlpha=1; }
     }
     // punteggio
     const s = 1 + this.scorePop*0.25;
     ctx.save(); ctx.translate(360, 178); ctx.scale(s,s); text(String(this.score), 0, 0, 84, this.x2>0?YELLOW:"#fff", "center", "#000", 12); ctx.restore();
-    if (this.x2 > 0) text("x2  " + Math.ceil(this.x2) + "s", 360, 240, 28, YELLOW, "center", "#000", 6);
-    if (this.combo >= 5 && !this.over) text("COMBO " + this.combo, 360, this.x2>0 ? 280 : 245, 26, "#fff", "center", "#000", 6);
+    const st = []; if (this.x2 > 0) st.push(["x2 " + Math.ceil(this.x2) + "s", YELLOW]);
+    if (this.coffee > 0) st.push(["☕ " + Math.ceil(this.coffee) + "s", "#ffe0b2"]); if (this.turbo > 0) st.push(["🔨 " + Math.ceil(this.turbo) + "s", "#ffb74d"]);
+    st.forEach(([sx, c], i)=> text(sx, 360 + (i - (st.length-1)/2)*150, 240, 26, c, "center", "#000", 6));
+    if (this.combo >= 5 && !this.over) text("COMBO " + this.combo, 360, st.length ? 280 : 245, 26, "#fff", "center", "#000", 6);
     // livello
     fitText(cityName(this.level), 62, 160, 18, 120, YELLOW, "center", "#000", 5);
     if (this.mode === "road"){ const left = LEVEL_EVERY - (this.score % LEVEL_EVERY);
       fitText(txt("next_city", left), 62, 184, 13, 124, "#fff", "center", "#000", 4); }
-    else text(txt("single_short"), 62, 184, 13, "#fff", "center", "#000", 4);
+    else text(txt(this.mode === "daily" ? "daily_short" : "single_short"), 62, 184, 13, "#fff", "center", "#000", 4);
     // operatore
     const op = IMG["op"+OPS[operator]];
     if (ok(op)){ ctx.save(); ctx.beginPath(); ctx.arc(62, 88, 44, 0, Math.PI*2); ctx.fillStyle=YELLOW; ctx.fill();
       ctx.beginPath(); ctx.arc(62, 88, 39, 0, Math.PI*2); ctx.clip(); img("op"+OPS[operator], 23, 49, 78, 78); ctx.restore(); }
-    drawTrophy(620, 86, 54, this.t); text(String(Math.max(rec[this.recKey()] || 0, this.score)), 676, 88, 30, "#fff", "center", "#000", 7);
+    drawTrophy(620, 86, 54, this.t); text(String(Math.max(this.recGet(), this.score)), 676, 88, 30, "#fff", "center", "#000", 7);
     this.pauseBtn.render();
 
     // testi volanti
@@ -3237,7 +3511,7 @@ const Game = {
       fitText(txt("help1"), 360, 355, 30, 560, "#fff");
       fitText(txt("help2"), 360, 398, 24, 560, "#ddd");
       fitText(txt("help3"), 360, 432, 24, 560, "#ddd");
-      ctx.font = "30px sans-serif"; ctx.textAlign="center"; ctx.fillText("⏱️  ⛑️  ⭐", 360, 485);
+      ctx.font = "30px sans-serif"; ctx.textAlign="center"; ctx.fillText("⏱️ ⛑️ ⭐ ☕ 🔨 🧨", 360, 485);
       fitText(txt("help4"), 360, 528, 24, 560, YELLOW);
       fitText(txt("help5"), 360, 572, 24, 560, "#fff");
       fitText(txt("good_luck"), 360, 638, 40, 560, YELLOW, "center", "#000", 7);
@@ -3260,11 +3534,11 @@ const Game = {
       const ttl = txt("over_" + this.reason), sub = txt("sub_" + this.reason);
       fitText(ttl, 360, py+70, this.reason==="crush"?64:50, 560, YELLOW, "center", "#000", 8);
       fitText(sub, 360, py+122, 22, 560, "#ddd");
-      fitText(txt(this.mode === "single" ? "floors_single" : "floors_road"), 360, py+178, 26, 560, "#aaa");
+      fitText(txt(this.mode === "single" ? "floors_single" : this.mode === "daily" ? "floors_daily" : "floors_road"), 360, py+178, 26, 560, "#aaa");
       text(String(this.score), 360, py+262, 120, "#fff", "center", "#000", 10);
       if (this.newRecord){ drawTrophy(150, py+262, 110, this.overT); drawTrophy(570, py+262, 110, this.overT+1.5);
         if (Math.floor(this.overT*3)%2===0) fitText(txt("new_record"), 360, py+352, 36, 540, YELLOW); }
-      else { drawTrophy(250, py+350, 50, this.overT); fitText(txt("record_colon", rec[this.recKey()] || 0), 290, py+352, 32, 340, "#fff", "left"); }
+      else { drawTrophy(250, py+350, 50, this.overT); fitText(txt("record_colon", this.recGet()), 290, py+352, 32, 340, "#fff", "left"); }
       // statistiche
       const stats = [[txt("city"), cityName(this.level)], [txt("combo_max_up"), String(this.bestCombo)], [txt("time"), fmtTime(this.playTime*1000)]];
       stats.forEach(([k,v],i)=>{ const x = 160 + i*200;
@@ -3276,7 +3550,7 @@ const Game = {
       else if (this.rankState === "ok") fitText(txt("pos_rank", this.rank), 360, py+585, 24, 560, YELLOW);
       else if (this.rankState === "fail") fitText(txt("rank_fail"), 360, py+585, 18, 560, "#ff8a80");
       ctx.restore();
-      this.retryBtn.render(); this.homeBtn.render();
+      this.retryBtn.render(); this.homeBtn.render(); this.shareBtn.render();
     }
   },
 
@@ -3340,12 +3614,13 @@ addEventListener("keydown", e=>{
 let last = performance.now();
 function frame(now){
   const dt = Math.min(0.05, (now - last)/1000); last = now;
-  scene.update(dt); LangUI.update(dt);
+  scene.update(dt); LangUI.update(dt); Medals.update(dt);
   if (scene !== Game) Music.tick();
   ctx.setTransform(cv.width/W, 0, 0, cv.height/H, 0, 0);
   ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high";
   scene.render();
   if (LangUI.on()) LangUI.render();
+  Medals.render();
   requestAnimationFrame(frame);
 }
 function drawLoading(){

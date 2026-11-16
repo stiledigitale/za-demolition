@@ -1,4 +1,4 @@
-# ZA DEMOLITION — versione web (Ver. B.7.0)
+# ZA DEMOLITION — versione web (Ver. B.8.0)
 
 Gioco aziendale ZA srl in stile Timberman: si demolisce un palazzo piano per piano con l'escavatore.
 Nato in GDevelop, poi riscritto da zero come pagina web (un solo file `index.html`, canvas 2D, JavaScript senza librerie).
@@ -36,6 +36,14 @@ Ogni modifica caricata su GitHub (branch `main`) viene pubblicata da sola da Clo
 - Supabase gratuito mette in pausa il progetto dopo 7 giorni senza richieste: si riattiva dal pannello.
 - Verificata dal sito il 15/11/2026 sul database vero (giocatore, punteggio, posizione, blocco dei punteggi falsi).
 - Dal 15/11/2026 la classifica è ripartita da zero (la vecchia, su Cloudflare D1 dell'account personale, non è stata importata). Chi aveva giocato reinserisce solo il nome.
+
+## Novità B.8.0
+- **Bonus nuovi** (oltre a ⏱️ +TEMPO, ⛑️ CASCO, ⭐ PUNTI x2): ☕ **caffè** (la barra del tempo resta ferma 8 s, diventa azzurra), 🔨 **martello turbo** (5 s: ogni colpo abbatte 2 piani, il secondo senza rischi; sulle travi colpisce doppio), 🧨 **TNT** (fa saltare da sola 5 piani, rompe anche le travi), **mattone d'oro** (+50, raro, compare dopo 30 piani). Probabilità in `pickItem()`.
+- **Eventi delle città** (`CITY_EVENTS`): 🌬️ Bora a Trieste (balconi che oscillano, raffiche), 🌊 acqua alta a Venezia (l'acqua sale fino all'escavatore), 🌫️ nebbia a Milano (nasconde i piani in arrivo), 🌋 Vesuvio a Napoli (scosse e cenere). Durano 5-6 s, con avviso; ogni 18-32 s.
+- **Sfida del giorno** (menu → 📅): ogni giorno una città (`dailyCity()`) e lo stesso palazzo per tutti (generatore con seme del giorno, `seededRand`). Classifica in Classifica → OGGI (modalità server `dAAAAMMGG`). Il record di oggi è in `zademo_dailyRec`.
+- **Medaglie** (15, menu → MEDAGLIE): 100 e 300 piani, combo x30, 3 travi, TNT, mattone d'oro, casco, caffè, Bora, acqua alta, nebbia, Vesuvio, arrivo a Roma, 50 piani nella sfida, condivisione. Avviso a schermo quando se ne conquista una; salvate anche online insieme ai progressi.
+- **Condividi** nel game over: crea un'immagine 1080×1350 (logo, piani, città, modalità, operatore, nome, indirizzo del gioco). Sul telefono apre la condivisione (WhatsApp, social...), sul computer scarica l'immagine e copia il testo.
+- Server: `za_submit_score` accetta `dAAAAMMGG`; limite di plausibilità 120 + 16 piani al secondo (per TNT e mattone d'oro).
 
 ## Come funziona il gioco (stato attuale)
 

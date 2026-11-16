@@ -177,3 +177,8 @@ revoke execute on function public.za_new_player(text, jsonb), public.za_get_prog
 grant execute on function public.za_new_player(text, jsonb), public.za_get_progress(text), public.za_set_name(text, text),
   public.za_save_progress(text, jsonb), public.za_restore(text), public.za_submit_score(text, text, int, int, int, int, int, int),
   public.za_leaderboard(text, text, int, text) to anon, authenticated;
+
+-- B.8.0 (16/11/2026): sfida del giorno (mode dAAAAMMGG) e limite di plausibilità per i bonus
+-- alter table public.za_scores drop constraint za_scores_mode_check;
+-- alter table public.za_scores add constraint za_scores_mode_check check (mode ~ '^(road|s[0-9]{1,2}|d[0-9]{8})$');
+-- za_submit_score / za_leaderboard: regex '^(road|s[0-9]{1,2}|d[0-9]{8})$', limite p_floors <= 120 + secondi*16 (migrazione za_daily_challenge_and_bonus)
