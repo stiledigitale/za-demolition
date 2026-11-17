@@ -1,4 +1,4 @@
-# ZA DEMOLITION — versione web (Ver. B.9.6)
+# ZA DEMOLITION — versione web (Ver. B.9.7)
 
 Gioco aziendale ZA srl in stile Timberman: si demolisce un palazzo piano per piano con l'escavatore.
 Nato in GDevelop, poi riscritto da zero come pagina web (un solo file `index.html`, canvas 2D, JavaScript senza librerie).
@@ -62,6 +62,7 @@ Ogni modifica caricata su GitHub (branch `main`) viene pubblicata da sola da Clo
 - **Escavatori** (stessa livrea ZA bianca): CAT 323, CAT 319M gommato, CAT 329, CAT 330, CAT 340, sbloccati con il record.
 - **Operatori:** con foto e nome, 11 in tutto (OPS = 0-7, 9, 10, 11). Tolto solo Seba (indice 8); FRANZ e DJ ZANELLA restano. B.9.3: aggiunta l'operatrice **MARYLU ❤** (indice 11, `op11.jpg` + `name11.png` con il cuore rosso). B.9.4: l'operatore ARTIGIANO (indice 1) si chiama ora **ARTISTA** (`name1.png` ricomposto con le lettere originali). B.9.5: nuova foto di MARYLU (occhi azzurri).
 - **Classifica scorrevole** (B.9.6): mostra fino a **100 posizioni** (prima 13); si scorre col dito, la rotellina o le frecce ↑↓, con barra laterale. Se il giocatore è in classifica, all'apertura la sua riga è già in vista. Il server (`za_leaderboard`) accetta al massimo 100: per andare oltre va alzato quel limite.
+- **Sfida del giorno numerata** (B.9.7): in classifica OGGI ogni riga riporta "📅 Sfida del giorno n° N · GG/MM" accanto alla città (n° 1 = 16/11/2026, `dailyNum()`), e così il sottotitolo. Il giorno della sfida ora segue l'**ora italiana** (`dailyYMD()` con fuso Europe/Rome): cambia a mezzanotte in Italia invece che all'01:00. La città della sfida si gioca anche se non è sbloccata nella Roadmap: è normale vedere punteggi lì.
 - **Multilingua** (B.5.0): italiano, inglese, tedesco, francese, spagnolo. Bandierina in alto a sinistra (schermata d'avvio e menu) con menu a scomparsa; le bandiere sono disegnate nel codice (le emoji delle bandiere non si vedono su Windows). Al primo avvio la lingua è quella del browser (se non è una delle 5: inglese); la scelta è salvata in `zademo_lang`. Tutti i testi sono nel dizionario `I18N` in `index.html` (ogni voce: [it, en, de, fr, es]) e si leggono con `txt("chiave")`. Restano in italiano i nomi delle città e le scritte disegnate sulle facciate; l'immagine `select.png` (SELECT OPERATOR) è già in inglese.
 - Al primo avvio (nessun nome salvato) la schermata "TOCCA PER INIZIARE" resta sempre visibile, così si può scegliere la lingua prima di inserire il nome.
 - Musica generata con WebAudio (menu e partita), comandi: tocco sinistra/destra, frecce, A/D.
