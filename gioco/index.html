@@ -35,7 +35,7 @@
    ZA DEMOLITION — versione web (porting dal progetto GDevelop r.00)
    Risoluzione logica 720x1280 (verticale), scalata alla finestra.
    ===================================================================== */
-const VERSION = "Ver. B.9.5 web";
+const VERSION = "Ver. B.9.6 web";
 const W = 720, H = 1280;
 const FONT = '"Arial Black","Segoe UI Black","Helvetica Neue",Impact,sans-serif';
 const YELLOW = "#FFE600";
@@ -2401,7 +2401,7 @@ const Net = {
   },
   scoreArgs(run){ return { p_id: this.id, p_mode: run.mode || "road", p_floors: run.floors|0, p_time_ms: run.time_ms|0,
     p_city: run.city|0, p_combo: run.combo|0, p_operator: run.operator|0, p_excavator: run.excavator|0 }; },
-  async board(period, mode){ await this.ensure(); return this.rpc("za_leaderboard", { p_mode: mode || "road", p_period: period, p_limit: 50, p_id: this.id }); },
+  async board(period, mode){ await this.ensure(); return this.rpc("za_leaderboard", { p_mode: mode || "road", p_period: period, p_limit: 100, p_id: this.id }); },
   async setName(n){ await this.ensure(); const j = await this.rpc("za_set_name", { p_id: this.id, p_name: n }); this.name = j.name; store.set("pname", j.name); store.set("nameSync", false); return j.name; },
   // primo avvio: il nome si salva SUBITO sul dispositivo, poi si invia al server (se offline, riprova al prossimo avvio)
   async setNameFirst(n){
@@ -2455,7 +2455,7 @@ function askText(title, hint, value, maxLen, onOk, required){
 /* ---------- SCHERMATA CLASSIFICA ---------- */
 const Ranking = {
   enter(){
-    this.t = 0; this.period = this.period || "all"; this.mode = this.mode || gameMode;
+    this.t = 0; this.sc = null; this.period = this.period || "all"; this.mode = this.mode || gameMode;
     if (this.city === undefined) this.city = Math.min(singleCity, maxLevel); this.rows = null; this.err = ""; this.load();
     const tab = (label, p, x) => new Button(x, 276, 230, 42, (bx,by,w,h)=>{ const on = this.period===p;
       ctx.fillStyle = on ? "rgba(255,230,0,.85)" : "rgba(255,255,255,.1)"; rrect(bx,by,w,h,12); ctx.fill(); text(label, bx+w/2, by+h/2+2, 18, on ? "#111" : "#ddd"); },
@@ -2487,10 +2487,10 @@ const Ranking = {
   boardKey(){ return this.mode === "single" ? "s" + this.city : (this.mode === "daily" ? "d" + dailyKey() : "road"); },
   play(){ if (this.mode === "daily"){ startDaily(); return; } if (this.mode === "single"){ if (this.city <= maxLevel){ singleCity = this.city; gameMode = "single"; store.set("scity", singleCity); store.set("mode", gameMode); go(Game); } else go(CityPick); } else { gameMode = "road"; store.set("mode",gameMode); go(Game); } },
   async load(){
-    this.rows = null; this.err = "";
+    this.rows = null; this.err = ""; this.sc = null;
     if (!Net.enabled()){ this.err = "err_offline"; return; }
     const key = this.boardKey() + this.period; this.key_ = key;
-    try{ const j = await Net.board(this.period, this.boardKey()); if (this.key_ === key) this.rows = j.rows; }
+    try{ const j = await Net.board(this.period, this.boardKey()); if (this.key_ === key){ this.rows = j.rows; this.initScroll(); } }
     catch(e){ this.err = "err_net"; }
   },
   askName(){
@@ -2504,7 +2504,19 @@ const Ranking = {
     askText(txt("recover"), txt("restore_hint") + (Net.code ? " " + txt("yours_is", Net.code) : ""), "", 6, async v=>{
       if (v.length < 6) throw new Error(txt("code6")); await Net.restore(v.toUpperCase()); this.load(); });
   },
-  update(dt){ this.t += dt; MenuBg.update(dt); this.buttons.forEach(b=>{ if (b.cityTab) b.visible = this.mode === "single"; b.update(dt); }); },
+  // elenco scorrevole (fino a 100 posizioni): righe da 49 px tra LIST_TOP e LIST_BOT
+  LIST_TOP: 352, LIST_BOT: 1000, ROW: 49,
+  initScroll(){
+    const n = this.rows ? this.rows.length : 0, maxOff = Math.max(0, n*this.ROW - (this.LIST_BOT - this.LIST_TOP));
+    this.sc = Scroller.make(-maxOff, 0, 0);
+    const mi = this.rows ? this.rows.findIndex(r=>r.me) : -1;   // se ci sono anch'io, parto con la mia riga in vista
+    if (mi >= 0){ const want = mi*this.ROW - (this.LIST_BOT - this.LIST_TOP)/2; this.sc.s = -Math.min(maxOff, Math.max(0, want)); }
+  },
+  down(x,y){ if (this.sc && y > this.LIST_TOP && y < this.LIST_BOT) Scroller.down(this.sc, y); },
+  move(x,y){ if (this.sc) Scroller.move(this.sc, y); },
+  up(){ if (this.sc) Scroller.up(this.sc); },
+  wheel(dy){ if (this.sc) Scroller.wheel(this.sc, dy); },
+  update(dt){ this.t += dt; MenuBg.update(dt); if (this.sc) Scroller.update(this.sc, dt); this.buttons.forEach(b=>{ if (b.cityTab) b.visible = this.mode === "single"; b.update(dt); }); },
   render(){
     MenuBg.render(); ctx.fillStyle = "rgba(5,8,20,.86)"; ctx.fillRect(0,0,W,H);
     drawTrophy(150, 108, 56, this.t); drawTrophy(570, 108, 56, this.t+1.5);
@@ -2518,9 +2530,11 @@ const Ranking = {
     else if (!this.rows){ const a = this.t*6; ctx.lineWidth = 6; ctx.strokeStyle = YELLOW; ctx.beginPath(); ctx.arc(360, 560, 30, a, a+4); ctx.stroke(); text(txt("loading"), 360, 620, 20, "#aaa"); }
     else if (!this.rows.length){ text(txt("no_scores"), 360, 540, 26, "#fff"); text(txt("be_first"), 360, 580, 22, YELLOW); }
     else {
-      const rows = this.rows.slice(0, 13);
-      rows.forEach((r,i)=>{
-        const y = 352 + i*49;
+      const off = this.sc ? this.sc.s : 0;
+      ctx.save(); ctx.beginPath(); ctx.rect(0, this.LIST_TOP - 2, W, this.LIST_BOT - this.LIST_TOP + 4); ctx.clip();
+      this.rows.forEach((r,i)=>{
+        const y = this.LIST_TOP + i*this.ROW + off;
+        if (y < this.LIST_TOP - this.ROW || y > this.LIST_BOT) return;
         ctx.fillStyle = r.me ? "rgba(255,230,0,.22)" : (i%2 ? "rgba(255,255,255,.04)" : "rgba(255,255,255,.08)");
         rrect(20, y, 680, 44, 10); ctx.fill();
         if (r.me){ ctx.lineWidth = 3; ctx.strokeStyle = YELLOW; ctx.stroke(); }
@@ -2534,6 +2548,8 @@ const Ranking = {
         text(String(r.floors), 560, y+24, 24, YELLOW);
         text(fmtTime(r.time_ms), 652, y+24, 20, "#fff");
       });
+      ctx.restore();
+      if (this.sc) Scroller.bar(this.sc, 704, this.LIST_TOP, this.LIST_BOT);
       const mine = this.rows.find(r=>r.me);
       if (!mine && Net.lastRank) text(txt("your_pos", Net.lastRank), 360, 1012, 18, YELLOW);
     }
@@ -2541,8 +2557,9 @@ const Ranking = {
   },
   key(k){ if (k==="Escape") go(Menu); else if (k==="Enter"||k===" ") this.play();
     else if (k==="ArrowLeft"){ this.period="all"; this.load(); } else if (k==="ArrowRight"){ this.period="week"; this.load(); }
-    else if (k==="ArrowUp"){ this.mode="road"; this.load(); }
-    else if (k==="ArrowDown"){ if (this.mode==="single") this.city = (this.city+1) % CITIES.length; this.mode="single"; this.load(); } }
+    else if (k==="ArrowUp"){ if (this.sc) Scroller.wheel(this.sc, -147); }
+    else if (k==="ArrowDown"){ if (this.sc) Scroller.wheel(this.sc, 147); }
+    else if (k==="PageUp"){ if (this.sc) Scroller.wheel(this.sc, -600); } else if (k==="PageDown"){ if (this.sc) Scroller.wheel(this.sc, 600); } }
 };
 
 /* ---------- LIVELLI / AMBIENTAZIONI ---------- */
