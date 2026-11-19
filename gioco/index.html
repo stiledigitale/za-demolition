@@ -35,7 +35,7 @@
    ZA DEMOLITION — versione web (porting dal progetto GDevelop r.00)
    Risoluzione logica 720x1280 (verticale), scalata alla finestra.
    ===================================================================== */
-const VERSION = "Ver. B.9.9 web";
+const VERSION = "Ver. B.9.10 web";
 const W = 720, H = 1280;
 const FONT = '"Arial Black","Segoe UI Black","Helvetica Neue",Impact,sans-serif';
 const YELLOW = "#FFE600";
@@ -213,6 +213,12 @@ const I18N = {
   it_tnt:       ["TNT! BOOM!","TNT! BOOM!","TNT! BUMM!","TNT ! BOUM !","¡TNT! ¡BUM!"],
   it_hammer:    ["MARTELLO TURBO!","TURBO HAMMER!","TURBO-HAMMER!","MARTEAU TURBO !","¡MARTILLO TURBO!"],
   it_coffee:    ["CAFFÈ! TEMPO FERMO","COFFEE! TIME FROZEN","KAFFEE! ZEIT STEHT","CAFÉ ! TEMPS FIGÉ","¡CAFÉ! TIEMPO PARADO"],
+  upd_title:    ["AGGIORNAMENTO · NUOVE FUNZIONALITÀ","UPDATE · NEW FEATURES","UPDATE · NEUE FUNKTIONEN","MISE À JOUR · NOUVEAUTÉS","ACTUALIZACIÓN · NOVEDADES"],
+  upd_lines:    [["❤️ Vite extra: sbagli e riparti!","🏁 Difficoltà rivista: si arriva fino a Roma","🏆 Classifica fino a 100 posizioni","📅 OGGI: tutte le partite della giornata","👷 Nuova operatrice: MARYLU"],
+                 ["❤️ Extra lives: make a mistake and keep going!","🏁 New difficulty: you can reach Rome","🏆 Leaderboard up to 100 places","📅 TODAY: all of the day's games","👷 New operator: MARYLU"],
+                 ["❤️ Extraleben: Fehler machen und weiterspielen!","🏁 Neue Schwierigkeit: Rom ist erreichbar","🏆 Rangliste bis Platz 100","📅 HEUTE: alle Spiele des Tages","👷 Neue Fahrerin: MARYLU"],
+                 ["❤️ Vies en plus : une erreur et ça repart !","🏁 Difficulté revue : on peut atteindre Rome","🏆 Classement jusqu'à 100 places","📅 AUJOURD'HUI : toutes les parties du jour","👷 Nouvelle opératrice : MARYLU"],
+                 ["❤️ Vidas extra: ¡fallas y sigues!","🏁 Nueva dificultad: se llega hasta Roma","🏆 Clasificación hasta 100 puestos","📅 HOY: todas las partidas del día","👷 Nueva operadora: MARYLU"]],
   it_life:      ["VITA EXTRA!","EXTRA LIFE!","EXTRALEBEN!","VIE EN PLUS !","¡VIDA EXTRA!"],
   revived:      ["RIPARTI! ❤️ -1","BACK IN! ❤️ -1","WEITER! ❤️ -1","ÇA REPART ! ❤️ -1","¡SIGUES! ❤️ -1"],
   it_gold:      ["MATTONE D'ORO +{0}","GOLD BRICK +{0}","GOLDZIEGEL +{0}","BRIQUE D'OR +{0}","¡LADRILLO DE ORO +{0}!"],
@@ -2237,6 +2243,14 @@ const Splash = {
     ctx.globalAlpha = 0.6 + 0.4*Math.sin(this.t*4);
     text(txt("tap_start"), 360, 820, 44, YELLOW, "center", "#000", 8); ctx.globalAlpha = 1;
     text(txt("with_music"), 360, 880, 22, "#ddd");
+    // banner aggiornamento (B.9.10): da cambiare a ogni versione con le novità
+    const bx = 50, by = 950, bw = 620, bh = 270, pulse = 0.5 + 0.5*Math.sin(this.t*3);
+    ctx.fillStyle = "rgba(10,10,10,.85)"; rrect(bx, by, bw, bh, 22); ctx.fill();
+    ctx.lineWidth = 4; ctx.strokeStyle = YELLOW; ctx.stroke();
+    ctx.fillStyle = YELLOW; rrect(bx, by, bw, 50, 22); ctx.fill(); ctx.fillRect(bx, by+28, bw, 22);
+    fitText("🆕 " + txt("upd_title"), 360, by+27, 24, bw-30, "#111");
+    ctx.globalAlpha = 0.7 + 0.3*pulse; fitText(VERSION.replace(" web",""), bx+bw-14, by+bh-16, 13, 200, "#888", "right"); ctx.globalAlpha = 1;
+    txt("upd_lines").forEach((l, i)=> fitText(l, bx+26, by+78 + i*36, 20, bw-52, i ? "#fff" : YELLOW, "left"));
   },
   tap(){ this.go(); }, key(){ this.go(); }
 };
