@@ -35,7 +35,7 @@
    ZA DEMOLITION — versione web (porting dal progetto GDevelop r.00)
    Risoluzione logica 720x1280 (verticale), scalata alla finestra.
    ===================================================================== */
-const VERSION = "Ver. B.9.11 web";
+const VERSION = "Ver. B.9.12 web";
 const W = 720, H = 1280;
 const FONT = '"Arial Black","Segoe UI Black","Helvetica Neue",Impact,sans-serif';
 const YELLOW = "#FFE600";
@@ -285,7 +285,7 @@ function txt(key, ...args){
 
 /* ---------- Canvas ---------- */
 const cv = document.getElementById("c");
-const ctx = cv.getContext("2d");
+let ctx = cv.getContext("2d");   // let: i balconi vengono pre-disegnati su una tela a parte (balconySprite)
 let viewScale = 1;
 function resize(){
   viewScale = Math.min(innerWidth / W, innerHeight / H);
@@ -622,7 +622,27 @@ function drawBalconyShape(bw, rail, slab){
       break;
   }
 }
+// B.9.12: balcone disegnato una volta su una tela, con contorno scuro, poi incollato con ombra → si stacca dallo sfondo
+const BAL_PX = 40, BAL_PT = 110, BAL_PB = 110;
+function balconySprite(r, slab){
+  const key = slab + "|" + r.side + "|" + r.bw + "|" + r.rail;
+  if (r._spr && r._spr.key === key && r._spr.deco === r.deco) return r._spr;
+  const w = r.bw + BAL_PX*2, h = BAL_PT + BAL_PB, bx = balX(r);
+  const raw = document.createElement("canvas"); raw.width = w*RS; raw.height = h*RS;
+  const keep = ctx; ctx = raw.getContext("2d");
+  try{ ctx.scale(RS, RS); ctx.translate(BAL_PX - bx, BAL_PT); drawBalconyRaw(r, 0, slab); } finally { ctx = keep; }
+  const out = document.createElement("canvas"); out.width = raw.width; out.height = raw.height; const o = out.getContext("2d");
+  const k = 3*RS; for (const [dx,dy] of [[-1,0],[1,0],[0,-1],[0,1],[-.7,-.7],[.7,-.7],[-.7,.7],[.7,.7]]) o.drawImage(raw, dx*k, dy*k);
+  o.globalCompositeOperation = "source-in"; o.fillStyle = "#1c130b"; o.fillRect(0, 0, out.width, out.height);
+  o.globalCompositeOperation = "source-over"; o.drawImage(raw, 0, 0);
+  return (r._spr = { key, deco: r.deco, cv: out, w, h });
+}
 function drawBalconyRow(r, by, slab){
+  const s = balconySprite(r, slab), bx = balX(r);
+  ctx.save(); ctx.shadowColor = "rgba(0,0,0,.55)"; ctx.shadowOffsetX = 4; ctx.shadowOffsetY = 9; ctx.shadowBlur = 10;
+  ctx.drawImage(s.cv, bx - BAL_PX, by - BAL_PT, s.w, s.h); ctx.restore();
+}
+function drawBalconyRaw(r, by, slab){
   const bx = balX(r);
   ctx.save(); ctx.translate(bx, by);
   for (const it of r.deco.items){ ctx.save(); ctx.translate(it.x, 30); ctx.scale(1.35, 1.35); ctx.translate(-it.x, -30); drawDecoItem(it, 30); ctx.restore(); }
@@ -3523,6 +3543,11 @@ const Game = {
     const over = (o,a)=>{ if (o && a>0){ ctx.globalAlpha=a; ctx.fillStyle=o; ctx.fillRect(-30,700,W+60,450); ctx.globalAlpha=1; } };
     if (mix < 1) over(pth.bgOver, 1-mix);
     over(th.bgOver, mix);
+    // B.9.12: sfondo più scuro e ombra ai lati del palazzo, per far risaltare palazzo e balconi
+    ctx.fillStyle = th.night ? "rgba(5,8,25,.18)" : "rgba(25,18,45,.30)"; ctx.fillRect(-30, -30, W+60, 1142);
+    for (const [x0, x1] of [[BUILD_X-70, BUILD_X], [BUILD_X+BUILD_W+70, BUILD_X+BUILD_W]]){
+      const g = ctx.createLinearGradient(x0, 0, x1, 0); g.addColorStop(0, "rgba(0,0,0,0)"); g.addColorStop(1, "rgba(0,0,0,.38)");
+      ctx.fillStyle = g; ctx.fillRect(Math.min(x0,x1), -30, 70, 1142); }
 
     // palazzo
     const sh = this.shift;
