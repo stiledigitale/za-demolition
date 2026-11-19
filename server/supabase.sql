@@ -182,3 +182,54 @@ grant execute on function public.za_new_player(text, jsonb), public.za_get_progr
 -- alter table public.za_scores drop constraint za_scores_mode_check;
 -- alter table public.za_scores add constraint za_scores_mode_check check (mode ~ '^(road|s[0-9]{1,2}|d[0-9]{8})$');
 -- za_submit_score / za_leaderboard: regex '^(road|s[0-9]{1,2}|d[0-9]{8})$', limite p_floors <= 120 + secondi*16 (migrazione za_daily_challenge_and_bonus)
+
+-- B.9.8 (19/11/2026): modalità 'today' = tutte le partite di oggi (ora italiana), qualsiasi modalità,
+-- miglior risultato per giocatore; ogni riga riporta anche 'mode' (road / sN / dAAAAMMGG). Migrazione za_leaderboard_today.
+create or replace function public.za_leaderboard(p_mode text default 'road', p_period text default 'all', p_limit int default 50, p_id text default null) returns jsonb
+language plpgsql stable security definer set search_path = '' as $$
+declare md text := coalesce(p_mode, 'road'); per text := case when p_period = 'week' then 'week' else 'all' end;
+  lim int := least(greatest(coalesce(p_limit, 50), 1), 100); since timestamptz; rows jsonb; anymode boolean := false;
+begin
+  if md = 'today' then anymode := true; per := 'today';
+    since := (date_trunc('day', now() at time zone 'Europe/Rome')) at time zone 'Europe/Rome';
+  else
+    if md !~ '^(road|s[0-9]{1,2}|d[0-9]{8})$' then md := 'road'; end if;
+    since := case when per = 'week' then now() - interval '7 days' else '-infinity'::timestamptz end;
+  end if;
+  select coalesce(jsonb_agg(jsonb_build_object(
+      'pos', b.pos, 'me', (p_id is not null and b.token = p_id), 'name', b.name, 'operator', b.operator, 'excavator', b.excavator,
+      'floors', b.floors, 'time_ms', b.time_ms, 'city', b.city, 'combo', b.combo, 'mode', b.mode,
+      'date', (extract(epoch from b.created_at) * 1000)::bigint) order by b.pos), '[]'::jsonb)
+    into rows
+  from (
+    select row_number() over (order by s.floors desc, s.time_ms asc) as pos, s.*, pl.name, pl.token
+    from (select distinct on (player_id) * from public.za_scores
+          where (anymode or mode = md) and created_at >= since order by player_id, floors desc, time_ms asc) s
+    join public.za_players pl on pl.id = s.player_id
+    order by s.floors desc, s.time_ms asc limit lim) b;
+  return jsonb_build_object('period', per, 'mode', md, 'rows', rows);
+end $$;
+
+-- B.9.8 (19/11/2026): giocatori collegati (migrazione za_presence)
+create table if not exists public.za_presence (
+  player_id bigint primary key references public.za_players(id) on delete cascade,
+  seen_at timestamptz not null default now()
+);
+alter table public.za_presence enable row level security;
+create index if not exists za_presence_seen on public.za_presence(seen_at);
+revoke all on public.za_presence from anon, authenticated;
+create or replace function public.za_ping(p_id text) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare pid bigint; n int;
+begin
+  select id into pid from public.za_players where token = p_id;
+  if pid is not null then
+    insert into public.za_presence(player_id, seen_at) values (pid, now())
+      on conflict (player_id) do update set seen_at = now();
+  end if;
+  delete from public.za_presence where seen_at < now() - interval '1 day';
+  select count(*) into n from public.za_presence where seen_at > now() - interval '75 seconds';
+  return jsonb_build_object('online', n);
+end $$;
+revoke all on function public.za_ping(text) from public;
+grant execute on function public.za_ping(text) to anon, authenticated, service_role;

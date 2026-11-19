@@ -35,7 +35,7 @@
    ZA DEMOLITION — versione web (porting dal progetto GDevelop r.00)
    Risoluzione logica 720x1280 (verticale), scalata alla finestra.
    ===================================================================== */
-const VERSION = "Ver. B.9.7 web";
+const VERSION = "Ver. B.9.8 web";
 const W = 720, H = 1280;
 const FONT = '"Arial Black","Segoe UI Black","Helvetica Neue",Impact,sans-serif';
 const YELLOW = "#FFE600";
@@ -138,6 +138,8 @@ const I18N = {
   error:        ["errore","error","Fehler","erreur","error"],
   per_city:     ["PER CITTÀ","BY CITY","NACH STADT","PAR VILLE","POR CIUDAD"],
   all_time:     ["DI SEMPRE","ALL TIME","ALLZEIT","GÉNÉRAL","HISTÓRICO"],
+  all_games:    ["TUTTE LE PARTITE","ALL GAMES","ALLE SPIELE","TOUTES LES PARTIES","TODAS LAS PARTIDAS"],
+  today_sub:    ["tutte le partite di oggi · miglior risultato di ognuno","all of today's games · everyone's best result","alle Spiele von heute · bestes Ergebnis pro Spieler","toutes les parties du jour · meilleur résultat de chacun","todas las partidas de hoy · mejor resultado de cada uno"],
   week:         ["SETTIMANA","WEEK","WOCHE","SEMAINE","SEMANA"],
   choose_name:  ["✎ SCEGLI IL NOME","✎ CHOOSE NAME","✎ NAME WÄHLEN","✎ CHOISIR UN NOM","✎ ELEGIR NOMBRE"],
   code:         ["CODICE","CODE","CODE","CODE","CÓDIGO"],
@@ -2402,6 +2404,17 @@ const Net = {
   },
   scoreArgs(run){ return { p_id: this.id, p_mode: run.mode || "road", p_floors: run.floors|0, p_time_ms: run.time_ms|0,
     p_city: run.city|0, p_combo: run.combo|0, p_operator: run.operator|0, p_excavator: run.excavator|0 }; },
+  // giocatori collegati ora: ping ogni 30 s (solo con la pagina in primo piano); il server conta chi ha pingato negli ultimi 75 s
+  users: null, _pingT: null,
+  async ping(){
+    if (!this.enabled() || document.hidden) return;
+    try{ await this.ensure(); const j = await this.rpc("za_ping", { p_id: this.id }); this.users = j.online|0; } catch(e){}
+  },
+  startPing(){
+    if (!this.enabled()) return;
+    this.ping(); clearInterval(this._pingT); this._pingT = setInterval(()=>this.ping(), 30000);
+    document.addEventListener("visibilitychange", ()=>{ if (!document.hidden) this.ping(); });
+  },
   async board(period, mode){ await this.ensure(); return this.rpc("za_leaderboard", { p_mode: mode || "road", p_period: period, p_limit: 100, p_id: this.id }); },
   async setName(n){ await this.ensure(); const j = await this.rpc("za_set_name", { p_id: this.id, p_name: n }); this.name = j.name; store.set("pname", j.name); store.set("nameSync", false); return j.name; },
   // primo avvio: il nome si salva SUBITO sul dispositivo, poi si invia al server (se offline, riprova al prossimo avvio)
@@ -2459,7 +2472,9 @@ const Ranking = {
     this.t = 0; this.sc = null; this.period = this.period || "all"; this.mode = this.mode || gameMode;
     if (this.city === undefined) this.city = Math.min(singleCity, maxLevel); this.rows = null; this.err = ""; this.load();
     const tab = (label, p, x) => new Button(x, 276, 230, 42, (bx,by,w,h)=>{ const on = this.period===p;
-      ctx.fillStyle = on ? "rgba(255,230,0,.85)" : "rgba(255,255,255,.1)"; rrect(bx,by,w,h,12); ctx.fill(); text(label, bx+w/2, by+h/2+2, 18, on ? "#111" : "#ddd"); },
+      ctx.fillStyle = on ? "rgba(255,230,0,.85)" : "rgba(255,255,255,.1)"; rrect(bx,by,w,h,12); ctx.fill();
+      const lb = this.mode === "daily" ? (p === "all" ? txt("all_games") : "📅 " + txt("daily")) : label;
+      fitText(lb, bx+w/2, by+h/2+2, 18, w-14, on ? "#111" : "#ddd"); },
       ()=>{ if (this.period!==p){ this.period = p; this.load(); } }, 6);
     // città della classifica: frecce ◀ ▶ (20 città)
     const carrow = (dir, x) => { const b = new Button(x, 222, 64, 44, (bx,by,w,h)=>{ ctx.fillStyle = "rgba(255,255,255,.14)"; rrect(bx,by,w,h,12); ctx.fill();
@@ -2472,7 +2487,7 @@ const Ranking = {
       ctx.fillStyle = on ? YELLOW : "rgba(255,255,255,.1)"; rrect(bx,by,w,h,14); ctx.fill();
       if (!on){ ctx.lineWidth = 2; ctx.strokeStyle = "rgba(255,230,0,.5)"; ctx.stroke(); }
       fitText(label, bx+w/2, by+h/2+2, 24, w-16, on ? "#111" : "#fff"); },
-      ()=>{ if (this.mode!==m){ this.mode = m; this.load(); } }, 6);
+      ()=>{ if (this.mode!==m){ this.mode = m; this.period = "all"; this.load(); } }, 6);
     this.buttons = [
       new Button(24, 24, 150, 64, (x,y,w,h)=>{ ctx.fillStyle="rgba(0,0,0,.6)"; rrect(x,y,w,h,16); ctx.fill();
         ctx.lineWidth=3; ctx.strokeStyle="rgba(255,230,0,.8)"; ctx.stroke(); text("◀ " + txt("menu"), x+w/2, y+h/2+2, 22, "#fff"); }, ()=>go(Menu), 8),
@@ -2485,8 +2500,9 @@ const Ranking = {
       new Button(110, 1120, 500, 86, (x,y,w,h)=>banner(x,y,w,h,txt("play")), ()=>this.play(), 14),
     ];
   },
-  boardKey(){ return this.mode === "single" ? "s" + this.city : (this.mode === "daily" ? "d" + dailyKey() : "road"); },
-  play(){ if (this.mode === "daily"){ startDaily(); return; } if (this.mode === "single"){ if (this.city <= maxLevel){ singleCity = this.city; gameMode = "single"; store.set("scity", singleCity); store.set("mode", gameMode); go(Game); } else go(CityPick); } else { gameMode = "road"; store.set("mode",gameMode); go(Game); } },
+  // OGGI: "TUTTE LE PARTITE" (period all → modalità server 'today', qualsiasi partita di oggi) oppure "SFIDA DEL GIORNO" (period week → dAAAAMMGG)
+  boardKey(){ return this.mode === "single" ? "s" + this.city : (this.mode === "daily" ? (this.period === "week" ? "d" + dailyKey() : "today") : "road"); },
+  play(){ if (this.mode === "daily"){ if (this.period === "week") startDaily(); else go(Game); return; } if (this.mode === "single"){ if (this.city <= maxLevel){ singleCity = this.city; gameMode = "single"; store.set("scity", singleCity); store.set("mode", gameMode); go(Game); } else go(CityPick); } else { gameMode = "road"; store.set("mode",gameMode); go(Game); } },
   async load(){
     this.rows = null; this.err = ""; this.sc = null;
     if (!Net.enabled()){ this.err = "err_offline"; return; }
@@ -2523,7 +2539,8 @@ const Ranking = {
     drawTrophy(150, 108, 56, this.t); drawTrophy(570, 108, 56, this.t+1.5);
     fitText(txt("ranking"), 360, 110, 48, 330, YELLOW, "center", "#000", 8);
     if (this.mode === "road") text(txt("road_rank_sub", LEVEL_EVERY), 360, 244, 17, "#bbb");
-    if (this.mode === "daily") fitText("📅 " + txt("daily_row", dailyNum(), dailyDate()) + " · " + txt("daily_sub", CITIES[dailyCity()]), 360, 244, 17, 660, YELLOW);
+    if (this.mode === "daily"){ if (this.period === "week") fitText("📅 " + txt("daily_row", dailyNum(), dailyDate()) + " · " + txt("daily_sub", CITIES[dailyCity()]), 360, 244, 17, 660, YELLOW);
+      else fitText(dailyDate() + " · " + txt("today_sub"), 360, 244, 17, 660, YELLOW); }
     // intestazione colonne
     text("#", 52, 338, 15, "#888"); text(txt("player"), 150, 338, 15, "#888", "left");
     fitText(txt("floors"), 560, 338, 15, 90, "#888"); fitText(txt("time"), 652, 338, 15, 80, "#888");
@@ -2545,9 +2562,11 @@ const Ranking = {
         if (ok(IMG[oi])){ ctx.save(); ctx.beginPath(); ctx.arc(104, y+22, 18, 0, Math.PI*2); ctx.clip(); img(oi, 86, y+4, 36, 36); ctx.restore(); }
         fitText(r.name || txt("anon"), 132, y+16, 20, 330, "#fff", "left");
         const ex = EXCAVATORS[r.excavator] ? EXCAVATORS[r.excavator].name : "";
+        const rm = r.mode || (this.mode === "daily" ? "d" : "");
         if (this.mode === "daily"){ const a = ex + " · " + cityName(r.city) + " · "; text(a, 132, y+34, 13, "#aaa", "left");
           ctx.font = "900 13px " + FONT; const ax = 132 + ctx.measureText(a).width;
-          fitText("📅 " + txt("daily_row", dailyNum(), dailyDate()), ax, y+34, 13, 520 - ax, YELLOW, "left"); }
+          const tag = rm[0] === "d" ? "📅 " + txt("daily_row", dailyNum(), dailyDate()) : (rm === "road" ? "ROADMAP" : txt("single_game"));
+          fitText(tag, ax, y+34, 13, 520 - ax, rm[0] === "d" ? YELLOW : "#7fd0ff", "left"); }
         else text(ex + " · " + cityName(r.city), 132, y+34, 13, "#aaa", "left");
         text(String(r.floors), 560, y+24, 24, YELLOW);
         text(fmtTime(r.time_ms), 652, y+24, 20, "#fff");
@@ -3713,6 +3732,10 @@ function frame(now){
   scene.render();
   if (LangUI.on()) LangUI.render();
   Medals.render();
+  // contatore dei giocatori collegati: solo il numero, piccolo, nell'angolo in alto a destra
+  if (Net.users){ ctx.font = `900 15px ${FONT}`; ctx.textAlign = "right"; ctx.textBaseline = "top";
+    ctx.lineWidth = 3; ctx.lineJoin = "round"; ctx.strokeStyle = "rgba(0,0,0,.6)"; ctx.strokeText(String(Net.users), W-8, 4);
+    ctx.fillStyle = "rgba(255,255,255,.85)"; ctx.fillText(String(Net.users), W-8, 4); }
   requestAnimationFrame(frame);
 }
 function drawLoading(){
@@ -3725,7 +3748,7 @@ function drawLoading(){
 }
 drawLoading();
 try{ window.focus(); cv.focus(); }catch(_){}
-loadImages().then(()=>{ buildThemes(); go(Splash); Net.start(); last = performance.now(); requestAnimationFrame(frame); });
+loadImages().then(()=>{ buildThemes(); go(Splash); Net.start().then(()=>Net.startPing()); last = performance.now(); requestAnimationFrame(frame); });
 </script>
 </body>
 </html>
