@@ -35,7 +35,7 @@
    ZA DEMOLITION — versione web (porting dal progetto GDevelop r.00)
    Risoluzione logica 720x1280 (verticale), scalata alla finestra.
    ===================================================================== */
-const VERSION = "Ver. B.9.8 web";
+const VERSION = "Ver. B.9.9 web";
 const W = 720, H = 1280;
 const FONT = '"Arial Black","Segoe UI Black","Helvetica Neue",Impact,sans-serif';
 const YELLOW = "#FFE600";
@@ -213,6 +213,8 @@ const I18N = {
   it_tnt:       ["TNT! BOOM!","TNT! BOOM!","TNT! BUMM!","TNT ! BOUM !","¡TNT! ¡BUM!"],
   it_hammer:    ["MARTELLO TURBO!","TURBO HAMMER!","TURBO-HAMMER!","MARTEAU TURBO !","¡MARTILLO TURBO!"],
   it_coffee:    ["CAFFÈ! TEMPO FERMO","COFFEE! TIME FROZEN","KAFFEE! ZEIT STEHT","CAFÉ ! TEMPS FIGÉ","¡CAFÉ! TIEMPO PARADO"],
+  it_life:      ["VITA EXTRA!","EXTRA LIFE!","EXTRALEBEN!","VIE EN PLUS !","¡VIDA EXTRA!"],
+  revived:      ["RIPARTI! ❤️ -1","BACK IN! ❤️ -1","WEITER! ❤️ -1","ÇA REPART ! ❤️ -1","¡SIGUES! ❤️ -1"],
   it_gold:      ["MATTONE D'ORO +{0}","GOLD BRICK +{0}","GOLDZIEGEL +{0}","BRIQUE D'OR +{0}","¡LADRILLO DE ORO +{0}!"],
   ev_bora:      ["🌬️ ARRIVA LA BORA!","🌬️ HERE COMES THE BORA!","🌬️ DIE BORA KOMMT!","🌬️ LA BORA ARRIVE !","🌬️ ¡LLEGA LA BORA!"],
   ev_acqua:     ["🌊 ACQUA ALTA!","🌊 HIGH WATER!","🌊 HOCHWASSER!","🌊 ACQUA ALTA !","🌊 ¡ACQUA ALTA!"],
@@ -2845,6 +2847,7 @@ const ITEMS = {
   hammer: { icon:"🔨", col:"#ff9800" },     // martello turbo: 2 piani a colpo per 5 s
   tnt:    { icon:"🧨", col:"#ff5722" },     // fa saltare 5 piani da sola
   gold:   { icon:"",   col:"#ffd54f" },     // mattone d'oro: +50
+  life:   { icon:"❤️", col:"#ff4d6d" },     // vita extra: al prossimo errore si riparte da lì (max 3)
 };
 function drawItem(type, x, y, t){
   const it = ITEMS[type], bob = Math.sin(t*4)*4;
@@ -3141,7 +3144,7 @@ const Game = {
   enter(){
     this.started = false; this.over = false; this.paused = false; this.reason = "";
     this.score = 0; this.side = 0; this.playTime = 0;
-    this.energy = 0.6; this.timerStarted = false;
+    this.energy = 0.6; this.timerStarted = false; this.lives = 0; this.inv = 0;
     this.anim = "idle"; this.frame = 0; this.animT = 0;
     this.shift = 0; this.shake = 0; this.camShake = 0; this.pending = null;
     this.overT = 0; this.newRecord = false; this.cloudX = -153; this.scorePop = 0;
@@ -3207,6 +3210,7 @@ const Game = {
   // bonus: i classici più spesso, TNT e mattone d'oro rari
   pickItem(){ const R = this.rand || Math.random, pool = [["time",30],["helmet",17],["star",16],["coffee",12],["hammer",12],["tnt",8]];
     if (this.score >= 30) pool.push(["gold",5]);
+    if (this.score >= 60 && (this.lives|0) < 3) pool.push(["life",6]);
     let x = R() * pool.reduce((a,p)=>a+p[1], 0); for (const [k,w] of pool){ if ((x -= w) < 0) return k; } return "time"; },
   start(){ if (!this.started){ this.started = true; Music.startGame(); } },
   setPause(p){
@@ -3301,6 +3305,7 @@ const Game = {
       if (r.side === -1 || r.hidden) continue;
       if (r.side === this.side && !safe){
         if (this.shield){ this.shield = false; r.dying = true; this.flash = 0.4; floatText(txt("saved_helmet"), 360, 420, 40, "#ff6b5e", 1.1); Medals.award("helmet"); }
+        else if (this.inv > 0) r.dying = true;   // appena ripartiti: un attimo di respiro
         else this.die("crush");
       } else r.dying = true;
     }
@@ -3309,6 +3314,7 @@ const Game = {
     const it = ITEMS[type];
     if (type === "time") this.energy = 1;
     if (type === "helmet") this.shield = true;
+    if (type === "life") this.lives = Math.min(3, (this.lives|0) + 1);
     if (type === "star") this.x2 = 6;
     if (type === "coffee"){ this.coffee = 8; Medals.award("coffee"); }
     if (type === "hammer") this.turbo = 5;
@@ -3346,8 +3352,17 @@ const Game = {
     mode: this.mode === "road" ? "ROADMAP" : txt(this.mode === "daily" ? "daily" : "single_game") }; },
   beamRow(){ return this.rows.find(r => r.beam && r.y >= ROW_MIN && r.y <= ROW_MAX); },
 
+  // vita extra: invece di perdere si riparte da qui (barra piena, ostacoli davanti tolti)
+  revive(reason){
+    this.lives--; this.energy = 1; this.inv = 1.5; this.flash = 0.5; this.camShake = 0.3;
+    for (const r of this.rows) if (r.y >= ROW_MIN - FLOOR_H && r.y <= ROW_MAX + FLOOR_H){ if (r.side !== -1) r.dying = true; if (r.beam){ r.beam = null; r.hidden = true; } }
+    floatText(txt("revived"), 360, 420, 46, "#ff4d6d", 1.4);
+    [523,659,784,1047].forEach((f,i)=>setTimeout(()=>tone(f,0.1,0.14,"square"), i*70));
+    burst(this.side===0?170:550, 960, 270, 360, 30, false);
+  },
   die(reason){
     if (this.over) return;
+    if ((this.lives|0) > 0){ this.revive(reason); return; }
     this.over = true; this.reason = reason; this.overT = 0; this.pending = reason; Music.stop();
     if (this.score > best){ best = this.score; store.set("best", best); }
     const rk = this.recKey(); this.newRecord = this.score > 0 && this.score > this.recGet();
@@ -3385,7 +3400,7 @@ const Game = {
     this.themeMix = Math.min(1, this.themeMix + dt*0.8);
     this.flash = Math.max(0, this.flash - dt);
     this.x2 = Math.max(0, this.x2 - dt);
-    this.coffee = Math.max(0, this.coffee - dt); this.turbo = Math.max(0, this.turbo - dt);
+    this.coffee = Math.max(0, this.coffee - dt); this.turbo = Math.max(0, this.turbo - dt); this.inv = Math.max(0, (this.inv||0) - dt);
     // TNT: 5 piani saltano uno dopo l'altro
     if (this.tnt && !this.over){ this.tnt.t -= dt;
       if (this.tnt.t <= 0){ this.tnt.t = 0.11; this.tnt.n--;
@@ -3417,7 +3432,8 @@ const Game = {
     if (playing){
       this.playTime += dt;
       if (this.timerStarted){
-        const drain = Math.min(0.36, 0.10 + this.score*0.0020);
+        // difficoltà (B.9.9): sale fino a 300 piani, poi +0,002 per ogni città; a Roma servono ~3,8 piani al secondo (prima 5,8: impossibile)
+        const drain = 0.10 + 0.10*Math.min(1, this.score/300) + 0.002*Math.min(19, Math.floor(this.score/LEVEL_EVERY));
         if (this.coffee <= 0) this.energy -= drain*dt;   // col caffè la barra resta ferma
         if (this.energy <= 0){ this.energy = 0; this.die(this.beamRow() ? "beam" : "time"); }
       }
@@ -3575,6 +3591,7 @@ const Game = {
     if (this.mode === "road"){ const left = LEVEL_EVERY - (this.score % LEVEL_EVERY);
       fitText(txt("next_city", left), 62, 184, 13, 124, "#fff", "center", "#000", 4); }
     else text(txt(this.mode === "daily" ? "daily_short" : "single_short"), 62, 184, 13, "#fff", "center", "#000", 4);
+    if (this.lives > 0) text("❤️".repeat(this.lives), 62, 214, 22, "#ff4d6d", "center");
     // operatore
     const op = IMG["op"+OPS[operator]];
     if (ok(op)){ ctx.save(); ctx.beginPath(); ctx.arc(62, 88, 44, 0, Math.PI*2); ctx.fillStyle=YELLOW; ctx.fill();
