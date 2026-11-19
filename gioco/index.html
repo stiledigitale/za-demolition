@@ -35,7 +35,7 @@
    ZA DEMOLITION — versione web (porting dal progetto GDevelop r.00)
    Risoluzione logica 720x1280 (verticale), scalata alla finestra.
    ===================================================================== */
-const VERSION = "Ver. B.9.12 web";
+const VERSION = "Ver. B.9.13 web";
 const W = 720, H = 1280;
 const FONT = '"Arial Black","Segoe UI Black","Helvetica Neue",Impact,sans-serif';
 const YELLOW = "#FFE600";
@@ -3556,6 +3556,12 @@ const Game = {
       if (mix < 1) ctx.drawImage(floorFor(this.prevLevel, this.prevTheme, v), BUILD_X, y, BUILD_W, FLOOR_H);
       ctx.globalAlpha = mix; ctx.drawImage(floorFor(this.level, this.level % THEMES.length, v), BUILD_X, y, BUILD_W, FLOOR_H); ctx.globalAlpha = 1;
     }
+    // B.9.12b: contorno scuro del palazzo, come i balconi (bordo + ombra interna)
+    ctx.fillStyle = "#1c130b"; ctx.fillRect(BUILD_X - 4, -30, 5, GROUND_Y + FLOOR_H + 30); ctx.fillRect(BUILD_X + BUILD_W - 1, -30, 5, GROUND_Y + FLOOR_H + 30);
+    { const gi = ctx.createLinearGradient(BUILD_X, 0, BUILD_X + 22, 0); gi.addColorStop(0, "rgba(0,0,0,.28)"); gi.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.fillStyle = gi; ctx.fillRect(BUILD_X + 1, -30, 22, GROUND_Y + FLOOR_H + 30);
+      const gr = ctx.createLinearGradient(BUILD_X + BUILD_W, 0, BUILD_X + BUILD_W - 22, 0); gr.addColorStop(0, "rgba(0,0,0,.28)"); gr.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.fillStyle = gr; ctx.fillRect(BUILD_X + BUILD_W - 23, -30, 22, GROUND_Y + FLOOR_H + 30); }
     // balconi + bonus
     for (const r of this.rows){
       const by = r.y + sh;
