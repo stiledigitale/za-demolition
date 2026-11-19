@@ -35,7 +35,7 @@
    ZA DEMOLITION — versione web (porting dal progetto GDevelop r.00)
    Risoluzione logica 720x1280 (verticale), scalata alla finestra.
    ===================================================================== */
-const VERSION = "Ver. B.9.13 web";
+const VERSION = "Ver. B.9.14 web";
 const W = 720, H = 1280;
 const FONT = '"Arial Black","Segoe UI Black","Helvetica Neue",Impact,sans-serif';
 const YELLOW = "#FFE600";
@@ -943,13 +943,38 @@ let excavator = Math.min(Math.max(0, store.get("exc", 0)|0), EXCAVATORS.length-1
 if (EXCAVATORS[excavator].unlock > best) excavator = 0;
 const IDLE_W = 281, IN_L = 214, IN_R = 491; // bordo "verso il palazzo" a scala 1
 const excCache = {};
+// B.9.14: contorno scuro come balconi e palazzo, per tutto ciò che si muove (escavatore, camion)
+const OUTLINE_COL = "#1c130b";
+function outlineCanvas(src, px){
+  const w = src.naturalWidth || src.width, h = src.naturalHeight || src.height, k = px || 6;   // 6 px a risoluzione doppia = 3 px a schermo
+  const c = document.createElement("canvas"); c.width = w; c.height = h; const g = c.getContext("2d");
+  for (const [dx,dy] of [[-1,0],[1,0],[0,-1],[0,1],[-.7,-.7],[.7,-.7],[-.7,.7],[.7,.7]]) g.drawImage(src, dx*k, dy*k);
+  g.globalCompositeOperation = "source-in"; g.fillStyle = OUTLINE_COL; g.fillRect(0, 0, w, h);
+  g.globalCompositeOperation = "source-over"; g.drawImage(src, 0, 0);
+  return c;
+}
+// disegna fn() su una tela a parte (zona x,y,w,h), le dà il contorno scuro e la incolla con l'ombra
+const OL = { a:null, b:null };
+function outlineLayer(x, y, w, h, fn){
+  const cw = Math.ceil(w*RS), ch = Math.ceil(h*RS);
+  if (!OL.a || OL.a.width !== cw || OL.a.height !== ch){ for (const k of ["a","b"]){ OL[k] = document.createElement("canvas"); OL[k].width = cw; OL[k].height = ch; } }
+  const a = OL.a.getContext("2d"), b = OL.b.getContext("2d");
+  a.setTransform(1,0,0,1,0,0); a.clearRect(0, 0, cw, ch); a.setTransform(RS, 0, 0, RS, -x*RS, -y*RS);
+  const keep = ctx; ctx = a; try{ fn(); } finally { ctx = keep; }
+  b.setTransform(1,0,0,1,0,0); b.globalCompositeOperation = "source-over"; b.clearRect(0, 0, cw, ch);
+  const k = 3*RS; for (const [dx,dy] of [[-1,0],[1,0],[0,-1],[0,1],[-.7,-.7],[.7,-.7],[-.7,.7],[.7,.7]]) b.drawImage(OL.a, dx*k, dy*k);
+  b.globalCompositeOperation = "source-in"; b.fillStyle = OUTLINE_COL; b.fillRect(0, 0, cw, ch);
+  b.globalCompositeOperation = "source-over"; b.drawImage(OL.a, 0, 0);
+  ctx.save(); ctx.shadowColor = "rgba(0,0,0,.5)"; ctx.shadowOffsetX = 4; ctx.shadowOffsetY = 8; ctx.shadowBlur = 10;
+  ctx.drawImage(OL.b, x, y, w, h); ctx.restore();
+}
 function excFrames(m){
   if (excCache[m]) return excCache[m];
   const E = EXCAVATORS[m], out = {};
   const names = []; for (let i=0;i<6;i++) names.push("idle"+i); for (let i=0;i<17;i++) names.push("demo"+i);
   for (const n of names){
     const im = IMG[n]; if (!ok(im)) continue;
-    if (!E.wheels && !E.stripes){ out[n] = im; continue; }
+    if (!E.wheels && !E.stripes){ out[n] = outlineCanvas(im); continue; }
     const c = document.createElement("canvas"); c.width = im.naturalWidth; c.height = im.naturalHeight;
     const g = c.getContext("2d"); g.drawImage(im, 0, 0);
     const H0 = c.height; // il corpo è allineato in basso a sinistra in tutti i fotogrammi
@@ -969,7 +994,7 @@ function excFrames(m){
       for (let x=0;x<330;x+=24){ g.beginPath(); g.moveTo(20+x, H0-68); g.lineTo(32+x, H0-68); g.lineTo(46+x, H0-82); g.lineTo(34+x, H0-82); g.fill(); }
       g.restore();
     }
-    out[n] = c;
+    out[n] = outlineCanvas(c);
   }
   return excCache[m] = out;
 }
@@ -984,7 +1009,8 @@ function drawExcavator(m, frameName, side, slideFrom, slide, bottomY, t, shake, 
   ctx.save();
   if (shake){ x += (Math.random()-0.5)*14; y += (Math.random()-0.5)*8; ctx.translate(x+fw/2, y+fh); ctx.rotate((Math.random()-0.5)*0.08); ctx.translate(-(x+fw/2), -(y+fh)); }
   if (side===1){ ctx.translate(x+fw, y); ctx.scale(-1,1); } else ctx.translate(x, y);
-  if (!folded) ctx.drawImage(fr, 0, 0, fw, fh);
+  if (!folded){ ctx.save(); ctx.shadowColor = "rgba(0,0,0,.5)"; ctx.shadowOffsetX = side===1 ? -4 : 4; ctx.shadowOffsetY = 8; ctx.shadowBlur = 10;
+    ctx.drawImage(fr, 0, 0, fw, fh); ctx.restore(); }
   else { // braccio abbassato per il trasporto: corpo dallo sprite, braccio disegnato ripiegato sul pianale
     const k = 0.5*E.s, X = xi => xi*k, Y = yi => fh - (368 - yi)*k;
     const seg = (x1,y1,x2,y2,w)=>{ ctx.lineCap = "round"; ctx.strokeStyle = "#cfd3d7"; ctx.lineWidth = (w+4)*k; ctx.beginPath(); ctx.moveTo(X(x1),Y(y1)); ctx.lineTo(X(x2),Y(y2)); ctx.stroke();
@@ -3073,6 +3099,7 @@ function drawTruckScene(tr, t){
   const q = 2*p - 1, e = 0.5 + 0.5*Math.sign(q)*Math.pow(Math.abs(q), 2.2);
   const TS = 0.92, TL = 740*TS;
   const x0 = W + 40 - e * (W + 80 + TL) + (e > 0.45 && e < 0.55 ? 0 : 0) + (W - TL)/2 - (W - TL)/2, road = 984, bob = Math.sin(t*28)*0.8;
+  outlineLayer(0, road - 440, W, 470, ()=>{
   ctx.save(); ctx.translate(x0 + 20, road + bob); ctx.scale(TS, TS);
   const wheel = (x, r)=>{ ctx.fillStyle = "#141414"; ctx.beginPath(); ctx.arc(x, -r, r, 0, Math.PI*2); ctx.fill();
     const rg = ctx.createRadialGradient(x-3, -r-3, 1, x, -r, r*0.6); rg.addColorStop(0,"#ffffff"); rg.addColorStop(1,"#9aa1a8");
@@ -3153,6 +3180,7 @@ function drawTruckScene(tr, t){
   ctx.fillStyle = "#2a2c30"; ctx.fillRect(100, -66, 20, 4); ctx.fillRect(100, -54, 20, 4);
   wheelR(67);
   ctx.restore();
+  });
   // titolo e percorso
   ctx.fillStyle = "rgba(0,0,0,.7)"; ctx.fillRect(0, 130, W, 210);
   ctx.fillStyle = YELLOW; ctx.fillRect(0, 130, W, 6); ctx.fillRect(0, 334, W, 6);
