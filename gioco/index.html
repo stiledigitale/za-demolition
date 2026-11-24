@@ -35,7 +35,7 @@
    ZA DEMOLITION — versione web (porting dal progetto GDevelop r.00)
    Risoluzione logica 720x1280 (verticale), scalata alla finestra.
    ===================================================================== */
-const VERSION = "Ver. B.9.16 web";
+const VERSION = "Ver. B.9.17 web";
 const W = 720, H = 1280;
 const FONT = '"Arial Black","Segoe UI Black","Helvetica Neue",Impact,sans-serif';
 const YELLOW = "#FFE600";
@@ -270,6 +270,7 @@ const I18N = {
   mdd_share:    ["condividi un risultato","share a result","teile ein Ergebnis","partage un résultat","comparte un resultado"],
   back_menu:    ["TORNA AL MENU","BACK TO MENU","ZURÜCK ZUM MENÜ","RETOUR AU MENU","VOLVER AL MENÚ"],
   restart:      ["RICOMINCIA","RESTART","NEU STARTEN","RECOMMENCER","REINICIAR"],
+  play_zsr:     ["🏎️ GIOCA A ZA STREET RACERS","🏎️ PLAY ZA STREET RACERS","🏎️ SPIELE ZA STREET RACERS","🏎️ JOUE À ZA STREET RACERS","🏎️ JUEGA A ZA STREET RACERS"],
   share_game:   ["CONDIVIDI IL GIOCO","SHARE THE GAME","SPIEL TEILEN","PARTAGER LE JEU","COMPARTIR EL JUEGO"],
   share_game_sub:["invita amici e colleghi","invite friends and colleagues","lade Freunde und Kollegen ein","invite amis et collègues","invita a amigos y compañeros"],
   share_game_text:["Prova ZA DEMOLITION: demolisci palazzi con l'escavatore in 20 città italiane, dalla Roadmap alla sfida del giorno! Si gioca gratis qui:","Try ZA DEMOLITION: demolish buildings with an excavator in 20 Italian cities, from the Roadmap to the daily challenge! Play free here:","Probier ZA DEMOLITION: reiß mit dem Bagger Gebäude in 20 italienischen Städten ab, von der Roadmap bis zur Tages-Challenge! Kostenlos spielen:","Essaie ZA DEMOLITION : démolis des immeubles à la pelleteuse dans 20 villes italiennes, de la Roadmap au défi du jour ! Joue gratuitement ici :","Prueba ZA DEMOLITION: derriba edificios con la excavadora en 20 ciudades italianas, ¡de la Roadmap al reto del día! Juega gratis aquí:"],
@@ -923,8 +924,14 @@ function go(s){ scene = s; parts.length = 0; s.enter && s.enter(); placeLinks();
 /* link social: veri <a> sopra il canvas (window.open è bloccato nell'anteprima) */
 const linkEls = SOCIAL.map(s=>{ const a=document.createElement("a"); a.href=s.url; a.target="_blank"; a.rel="noopener"; a.title=s.img;
   document.getElementById("links").appendChild(a); return a; });
+// link all'altro gioco aziendale (B.9.17): fascia in fondo al menu
+const ZSR_URL = "https://za-street-racers.pages.dev", ZSR_BOX = { x:150, y:1232, w:420, h:40 };
+const zsrEl = (()=>{ const a = document.createElement("a"); a.href = ZSR_URL; a.target = "_blank"; a.rel = "noopener"; a.title = "ZA Street Racers"; a.style.borderRadius = "14px";
+  document.getElementById("links").appendChild(a); return a; })();
 function placeLinks(){
   const r = cv.getBoundingClientRect(), k = r.width / W;
+  zsrEl.style.display = scene === Menu ? "block" : "none";
+  if (scene === Menu){ zsrEl.style.left = (r.left+ZSR_BOX.x*k)+"px"; zsrEl.style.top = (r.top+ZSR_BOX.y*k)+"px"; zsrEl.style.width = (ZSR_BOX.w*k)+"px"; zsrEl.style.height = (ZSR_BOX.h*k)+"px"; }
   linkEls.forEach((a,i)=>{
     const so = scene===Menu && Menu.social ? Menu.social[i] : null;
     a.style.display = so ? "block" : "none";
@@ -2072,6 +2079,10 @@ const Menu = {
     if (best > 0){ text(txt("single_short"), 580, 392, 17, "#aaa", "right"); text(String(recSingle()), 580, 428, 36, "#fff", "right", "#000", 6); }
     this.buttons.forEach(b=>b.render());
     text(txt("follow"), 360, 1138, 17, YELLOW, "center");
+    { const b = ZSR_BOX, p = 1 + 0.025*Math.sin(this.t*3);
+      ctx.save(); ctx.translate(b.x + b.w/2, b.y + b.h/2); ctx.scale(p, p); ctx.translate(-(b.x + b.w/2), -(b.y + b.h/2));
+      ctx.fillStyle = "#111"; rrect(b.x, b.y, b.w, b.h, 14); ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = YELLOW; ctx.stroke();
+      fitText(txt("play_zsr") + "  ▶", b.x + b.w/2, b.y + b.h/2 + 1, 18, b.w - 24, YELLOW); ctx.restore(); }
     for (const so of this.social){
       if (so.img === "web"){ const cx=so.x+so.w/2, cy=so.y+so.h/2, r=so.w/2;
         blob(cx, cy, r, YELLOW); ctx.strokeStyle="#111"; ctx.lineWidth=3;
