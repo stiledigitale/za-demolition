@@ -35,7 +35,7 @@
    ZA DEMOLITION — versione web (porting dal progetto GDevelop r.00)
    Risoluzione logica 720x1280 (verticale), scalata alla finestra.
    ===================================================================== */
-const VERSION = "Ver. B.9.15 web";
+const VERSION = "Ver. B.9.16 web";
 const W = 720, H = 1280;
 const FONT = '"Arial Black","Segoe UI Black","Helvetica Neue",Impact,sans-serif';
 const YELLOW = "#FFE600";
@@ -93,6 +93,7 @@ function setLang(c){ if (!LANG_CODES.includes(c)) return; LANG = c; store.set("l
 // ogni voce: [italiano, inglese, tedesco, francese, spagnolo]
 const I18N = {
   tap_start:    ["PREMI PER INIZIARE","PRESS TO START","DRÜCKEN ZUM STARTEN","APPUIE POUR COMMENCER","PULSA PARA EMPEZAR"],
+  lap:          ["{0}° GIRO","LAP {0}","{0}. RUNDE","{0}e TOUR","{0}.ª VUELTA"],
   loading_up:   ["CARICAMENTO","LOADING","LADEN","CHARGEMENT","CARGANDO"],
   with_music:   ["🔊 con musica","🔊 with music","🔊 mit Musik","🔊 avec musique","🔊 con música"],
   record_road:  ["RECORD ROADMAP","ROADMAP RECORD","ROADMAP-REKORD","RECORD ROADMAP","RÉCORD ROADMAP"],
@@ -1053,7 +1054,8 @@ function drawExcavator(m, frameName, side, slideFrom, slide, bottomY, t, shake, 
 
 /* ---------- CITTÀ (ROADMAP) ---------- */
 const CITIES = ["RIVA DEL GARDA","TRENTO","BOLZANO","VERONA","TRIESTE","VENEZIA","PADOVA","BERGAMO","BRESCIA","TORINO","MILANO","BOLOGNA","GENOVA","FIRENZE","NAPOLI","BARI","CATANZARO","PALERMO","CAGLIARI","ROMA"];
-const cityName = lv => CITIES[lv % CITIES.length] + (lv >= CITIES.length ? " ★" + (Math.floor(lv/CITIES.length)+1) : "");
+// dopo Roma il giro ricomincia: "TRENTO · 3° GIRO" (prima era "TRENTO ★3")
+const cityName = lv => CITIES[lv % CITIES.length] + (lv >= CITIES.length ? " · " + txt("lap", Math.floor(lv/CITIES.length)+1) : "");
 let maxLevel = store.get("maxLevel", 0);
 /* ---------- RIVA DEL GARDA: porto, lago e Torre Apponale (prima tappa) ---------- */
 let rivaCanvas = null;
@@ -3675,11 +3677,13 @@ const Game = {
     st.forEach(([sx, c], i)=> text(sx, 360 + (i - (st.length-1)/2)*150, 240, 26, c, "center", "#000", 6));
     if (this.combo >= 5 && !this.over) text("COMBO " + this.combo, 360, st.length ? 280 : 245, 26, "#fff", "center", "#000", 6);
     // livello
-    fitText(cityName(this.level), 62, 160, 18, 120, YELLOW, "center", "#000", 5);
+    fitText(CITIES[this.level % CITIES.length], 62, 160, 18, 120, YELLOW, "center", "#000", 5);
+    const lapN = Math.floor(this.level / CITIES.length) + 1;
+    if (lapN > 1) text(txt("lap", lapN), 62, 204, 13, YELLOW, "center", "#000", 4);
     if (this.mode === "road"){ const left = LEVEL_EVERY - (this.score % LEVEL_EVERY);
       fitText(txt("next_city", left), 62, 184, 13, 124, "#fff", "center", "#000", 4); }
     else text(txt(this.mode === "daily" ? "daily_short" : "single_short"), 62, 184, 13, "#fff", "center", "#000", 4);
-    if (this.lives > 0) text("❤️".repeat(this.lives), 62, 214, 22, "#ff4d6d", "center");
+    if (this.lives > 0) text("❤️".repeat(this.lives), 62, lapN > 1 ? 232 : 214, 22, "#ff4d6d", "center");
     // operatore
     const op = IMG["op"+OPS[operator]];
     if (ok(op)){ ctx.save(); ctx.beginPath(); ctx.arc(62, 88, 44, 0, Math.PI*2); ctx.fillStyle=YELLOW; ctx.fill();
