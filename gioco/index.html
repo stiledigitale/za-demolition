@@ -35,7 +35,7 @@
    ZA DEMOLITION — versione web (porting dal progetto GDevelop r.00)
    Risoluzione logica 720x1280 (verticale), scalata alla finestra.
    ===================================================================== */
-const VERSION = "Ver. B.9.14 web";
+const VERSION = "Ver. B.9.15 web";
 const W = 720, H = 1280;
 const FONT = '"Arial Black","Segoe UI Black","Helvetica Neue",Impact,sans-serif';
 const YELLOW = "#FFE600";
@@ -92,7 +92,8 @@ document.documentElement.lang = LANG;
 function setLang(c){ if (!LANG_CODES.includes(c)) return; LANG = c; store.set("lang", c); document.documentElement.lang = c; }
 // ogni voce: [italiano, inglese, tedesco, francese, spagnolo]
 const I18N = {
-  tap_start:    ["TOCCA PER INIZIARE","TAP TO START","TIPPEN ZUM STARTEN","TOUCHE POUR COMMENCER","TOCA PARA EMPEZAR"],
+  tap_start:    ["PREMI PER INIZIARE","PRESS TO START","DRÜCKEN ZUM STARTEN","APPUIE POUR COMMENCER","PULSA PARA EMPEZAR"],
+  loading_up:   ["CARICAMENTO","LOADING","LADEN","CHARGEMENT","CARGANDO"],
   with_music:   ["🔊 con musica","🔊 with music","🔊 mit Musik","🔊 avec musique","🔊 con música"],
   record_road:  ["RECORD ROADMAP","ROADMAP RECORD","ROADMAP-REKORD","RECORD ROADMAP","RÉCORD ROADMAP"],
   combo_max:    ["combo max","max combo","max. Combo","combo max","combo máx"],
@@ -300,7 +301,7 @@ resize();
 
 /* ---------- Immagini ---------- */
 const IMG = {};
-const imgList = ["title.png","floor.png","balcony.png","city.png","cloud.png",
+const imgList = ["cover.webp","title.png","floor.png","balcony.png","city.png","cloud.png",
   "facebook.png","instagram.png","linkedin.png","tiktok.png",
   "select.png"];
 for (let i=0;i<6;i++) imgList.push("idle"+i+".webp");
@@ -2216,7 +2217,7 @@ const Roadmap = {
   },
   pos(i){ return [i%2 ? 480 : 240, this.Y0 - i*this.STEP + this.sc.s]; },
   down(x,y){ if (y > this.TOP - 30 && y < this.BOT) Scroller.down(this.sc, y); },
-  move(x,y){ Scroller.move(this.sc, y); },
+  move(x,y){ if (this.sc) Scroller.move(this.sc, y); },
   up(){ Scroller.up(this.sc); },
   wheel(dy){ Scroller.wheel(this.sc, dy); },
   update(dt){ this.t += dt; MenuBg.update(dt); Scroller.update(this.sc, dt); this.buttons.forEach(b=>b.update(dt)); },
@@ -2269,29 +2270,51 @@ const Roadmap = {
 };
 
 /* ---------- AVVIO: il primo tocco accende l'audio (i browser bloccano la musica automatica) ---------- */
+// B.9.15: copertina a tutto schermo, finta barra di caricamento di 5 secondi, poi "PREMI PER INIZIARE" nella lingua del sistema
+const SPLASH_LOAD = 5;
 const Splash = {
-  enter(){ this.t = 0; this.buttons = []; this.hold = false;
-    // se il browser lo consente la musica parte subito e si va dritti al menu
-    // primo avvio (nessun nome): la schermata resta, così si può scegliere la lingua con la bandierina
-    try{ initAudio(); if (actx && actx.state === "running" && Net.name){ go(afterSplash()); return; } }catch(e){} },
-  go(){ initAudio(); go(afterSplash()); Music.startMenu(); },
-  update(dt){ this.t += dt; MenuBg.update(dt); if (actx && actx.state === "running" && !this.hold && Net.name) this.go(); },  // hold: si sta scegliendo la lingua
+  enter(){ this.t = 0; this.buttons = []; this.hold = false; try{ initAudio(); }catch(e){} },
+  ready(){ return this.t >= SPLASH_LOAD; },
+  go(){ if (!this.ready()) return; initAudio(); go(afterSplash()); Music.startMenu(); },
+  update(dt){ this.t += dt; },
   render(){
-    MenuBg.render(); MenuBg.veil(1);
-    const s = 1.0 + Math.sin(this.t*2.2)*0.03;
-    ctx.save(); ctx.translate(360, 420); ctx.scale(s*1.25,s*1.25); img("title",-181.5,-129.5,363,259); ctx.restore();
-    ctx.fillStyle = "rgba(0,0,0,.7)"; ctx.fillRect(0, 760, W, 150); ctx.fillStyle = YELLOW; ctx.fillRect(0, 760, W, 5); ctx.fillRect(0, 905, W, 5);
-    ctx.globalAlpha = 0.6 + 0.4*Math.sin(this.t*4);
-    text(txt("tap_start"), 360, 820, 44, YELLOW, "center", "#000", 8); ctx.globalAlpha = 1;
-    text(txt("with_music"), 360, 880, 22, "#ddd");
-    // banner aggiornamento (B.9.11): solo la scritta, senza elenco delle novità
-    { const bx = 70, by = 960, bw = 580, bh = 76, pulse = 1 + 0.03*Math.sin(this.t*3);
+    ctx.fillStyle = "#000"; ctx.fillRect(0, 0, W, H);
+    const im = IMG["cover"];
+    if (ok(im)){ const s = Math.max(W/im.naturalWidth, H/im.naturalHeight), zoom = 1 + 0.03*Math.min(1, this.t/8);   // lento zoom
+      const w = im.naturalWidth*s*zoom, h = im.naturalHeight*s*zoom; ctx.drawImage(im, (W-w)/2, (H-h)/2, w, h); }
+    const g = ctx.createLinearGradient(0, 960, 0, H); g.addColorStop(0, "rgba(0,0,0,0)"); g.addColorStop(1, "rgba(0,0,0,.75)");
+    ctx.fillStyle = g; ctx.fillRect(0, 960, W, H-960);
+    if (!this.ready()){
+      // barra di caricamento (finta): rallenta e riparte come quelle vere
+      const p = Math.min(1, this.t / SPLASH_LOAD), e = p < 0.6 ? p/0.6*0.7 : 0.7 + (p-0.6)/0.4*0.3, shown = Math.min(1, e + 0.02*Math.sin(this.t*9)*(1-p));
+      const bx = 90, by = 1120, bw = 540, bh = 30;
+      ctx.fillStyle = "rgba(0,0,0,.75)"; rrect(bx-6, by-6, bw+12, bh+12, 20); ctx.fill();
+      ctx.lineWidth = 4; ctx.strokeStyle = YELLOW; rrect(bx-6, by-6, bw+12, bh+12, 20); ctx.stroke();
+      ctx.save(); rrect(bx, by, bw, bh, 15); ctx.clip();
+      ctx.fillStyle = YELLOW; ctx.fillRect(bx, by, bw*shown, bh);
+      ctx.fillStyle = "rgba(0,0,0,.25)"; for (let x = -40 + (this.t*80)%40; x < bw*shown; x += 40){ ctx.beginPath(); ctx.moveTo(bx+x, by+bh); ctx.lineTo(bx+x+18, by+bh); ctx.lineTo(bx+x+38, by); ctx.lineTo(bx+x+20, by); ctx.fill(); }
+      ctx.restore();
+      const dots = ".".repeat(1 + Math.floor(this.t*3) % 3);
+      text(txt("loading_up") + dots, 360, by - 34, 26, "#fff", "center", "#000", 6);
+      text(Math.round(shown*100) + "%", 360, by + bh + 34, 22, YELLOW, "center", "#000", 5);
+      return;
+    }
+    const k = Math.min(1, (this.t - SPLASH_LOAD) / 0.4);   // entrata morbida
+    ctx.globalAlpha = k;
+    ctx.fillStyle = "rgba(0,0,0,.72)"; ctx.fillRect(0, 1040, W, 112); ctx.fillStyle = YELLOW; ctx.fillRect(0, 1040, W, 5); ctx.fillRect(0, 1147, W, 5);
+    ctx.globalAlpha = k * (0.6 + 0.4*Math.sin(this.t*4));
+    fitText(txt("tap_start"), 360, 1086, 46, 660, YELLOW, "center", "#000", 8); ctx.globalAlpha = k;
+    text(txt("with_music"), 360, 1130, 20, "#ddd");
+    // banner aggiornamento (solo la scritta)
+    { const bx = 110, by = 1172, bw = 500, bh = 58, pulse = 1 + 0.03*Math.sin(this.t*3);
       ctx.save(); ctx.translate(360, by + bh/2); ctx.scale(pulse, pulse); ctx.translate(-360, -(by + bh/2));
-      ctx.fillStyle = YELLOW; rrect(bx, by, bw, bh, 20); ctx.fill(); ctx.lineWidth = 4; ctx.strokeStyle = "#111"; ctx.stroke();
-      fitText("🆕 " + txt("upd_title"), 360, by + bh/2 + 2, 26, bw - 30, "#111"); ctx.restore(); }
+      ctx.fillStyle = YELLOW; rrect(bx, by, bw, bh, 18); ctx.fill(); ctx.lineWidth = 4; ctx.strokeStyle = "#111"; ctx.stroke();
+      fitText("🆕 " + txt("upd_title"), 360, by + bh/2 + 2, 22, bw - 26, "#111"); ctx.restore(); }
+    ctx.globalAlpha = 1;
   },
   tap(){ this.go(); }, key(){ this.go(); }
 };
+
 
 /* ---------- PRIMO AVVIO: nome giocatore obbligatorio ---------- */
 // dopo lo Splash: se sul dispositivo non c'è ancora un nome si passa da qui, altrimenti dritti al menu
@@ -2341,7 +2364,7 @@ const CityPick = {
   pick(i){ if (this.locked(i)){ sfx.click && sfx.click(); return; }
     singleCity = i; gameMode = "single"; store.set("scity", i); store.set("mode", gameMode); go(Game); },
   down(x,y){ if (y > this.TOP) { Scroller.down(this.sc, y); this.downAt = [x,y]; } },
-  move(x,y){ Scroller.move(this.sc, y); },
+  move(x,y){ if (this.sc) Scroller.move(this.sc, y); },
   up(x,y){ if (Scroller.up(this.sc) && this.downAt){
       for (let i=0;i<CITIES.length;i++){ const [cx,cy,w,h] = this.rect(i); if (x>=cx && x<=cx+w && y>=cy && y<=cy+h && y > this.TOP){ sfx.click(); this.pick(i); break; } } }
     this.downAt = null; },
